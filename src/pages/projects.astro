@@ -1,0 +1,14 @@
+---
+import {Astro} from 'astro';
+import ProjectList from '../components/ProjectList.astro';
+const projects = Astro.fetchContent('../projects/**/*.md');
+---
+<html>
+<head>
+  <link rel="stylesheet" href="/styles/global.css">
+</head>
+<body>
+  <h1>Projects</h1>
+  <ProjectList projects={projects} />
+</body>
+</html>

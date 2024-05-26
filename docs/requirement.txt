@@ -1,0 +1,1 @@
+Enhance the code to use Astro@4.9.1 and TailwindCSS@3.4.3 from the ground up. Github CI/CD can be disregarded for this next iteration.
