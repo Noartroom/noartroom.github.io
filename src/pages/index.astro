@@ -1,0 +1,38 @@
+<!-- ---
+// Import necessary components and classes
+import BaseLayout from '../src/layouts/BaseLayout.astro';
+import Post from '../src/components/Post.astro';
+import Blog from '../src/utils/Blog';
+
+// Initialize the Blog class
+const blog = new Blog();
+
+// Fetch posts using the Blog class
+const posts = blog.fetchPosts();
+---
+<BaseLayout>
+  <div class="space-y-8">
+   
+    {finalPosts.map(post => (
+      <Post title={post.title} content={post.content} date={post.date} />
+    ))}
+
+  </div>
+</BaseLayout> -->
+
+---
+
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Astro</title>
+	</head>
+	<body>
+		<h1>NOARTROOM BLOG</h1>
+	</body>
+</html>
