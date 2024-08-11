@@ -1,0 +1,22 @@
+{
+    "background_color": "#c1ddf9",
+    "display": "standalone",
+    "icons": [
+      {
+        "sizes": "192x192",
+        "src": "/images/favicons/favicon.svg",
+        "type": "image/svg"
+      },
+      {
+        "sizes": "512x512",
+        "src": "/images/favicons/favicon.svg",
+        "type": "image/svg"
+      }
+    ],
+    "start_url": "/",
+    "scope": "/",
+    "name": "Noartroom",
+    "short_name": "Noartroom",
+    "description": "Noartroom Blog",
+    "theme_color": "#0f172a"
+  }

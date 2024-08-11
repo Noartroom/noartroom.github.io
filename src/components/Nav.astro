@@ -1,0 +1,59 @@
+---
+import HeaderLink from './HeaderLink.astro';
+
+const { current = '' } = Astro.props;
+---
+
+<style>
+  nav {
+    align-items: center;
+    display: flex;
+    flex: 1;
+    font-weight: 700;
+    justify-content: flex-end;
+    text-transform: uppercase;
+  }
+ 
+  a {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    margin-left: 20px;
+    min-width: 70px;
+  }
+
+  a:not(.active) {
+    opacity: 0.7;
+  }
+
+ 
+
+  a::before {
+    content: '';
+    position: absolute;
+    transition: transform .3s ease;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--text-secondary);
+    transform: scaleX(0);
+  }
+
+  a:hover::before,
+  .active::before {
+    transform: scaleX(1);
+  }
+
+  .active::before {
+    background: var(--primary-color);
+  }  
+
+</style>
+
+<nav>
+  <HeaderLink class={current === "home" ? "active" : ""} href='/'>home</a>
+  <HeaderLink class={current === "about" ? "active" : ""} href='/about'>about</a>
+  <HeaderLink class={current === "blog" ? "active" : ""} href='/blog'>blog</a>
+</nav>
