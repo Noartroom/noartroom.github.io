@@ -29,7 +29,7 @@
   :global(.dark) .moon { fill: white; }
 </style>
 
-<script is:inline>
+<script is:inline type="module">
   const theme = (() => {
     if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
       return localStorage.getItem('theme');
