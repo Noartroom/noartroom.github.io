@@ -1,7 +1,9 @@
 ---
 import HeaderLink from './HeaderLink.astro';
 
-/* todo add and display blog title variable / or switch BLOG to HOME when url is not /blog anymore, but instead a post
+/* todo remove link and add dynamic headings */
+/*
+todo add and display blog title variable / or switch BLOG to HOME when url is not /blog anymore, but instead a post
  */
 ---
 
@@ -11,33 +13,19 @@ import HeaderLink from './HeaderLink.astro';
     display: flex;
     flex: 1;
     font-weight: 700;
-    justify-content: flex-end;
+    /* justify-content: flex-end; */
     text-transform: uppercase;
   }
   a {
     color: inherit;
     text-decoration: none;
-    display: block;
-    position: relative;
-    margin-left: 20px;
+    display: flex;
+    margin-left: 1em;
+    margin-right: 1em;
     min-width: 70px;
   }
-  a::before {
-    content: '';
-    position: absolute;
-    transition: transform .3s ease;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--text-secondary);
-    transform: scaleX(0);
-  }
-
-  a:hover::before,
-
 </style>
 
 <nav>
-  <HeaderLink href='/blog'>BLOG</a>
+  <HeaderLink href='/blog'>BLOG</a> 
 </nav>
