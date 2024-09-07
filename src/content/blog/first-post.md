@@ -4,7 +4,7 @@ description: 'Lorem ipsum dolor sit amet'
 pubDate: 'Jul 08 2022'
 heroImage: 'blog-placeholder-3.jpg'
 ---
-<script src="https://embed.github.com/view/3d/Noartroom/noartroom.github.io/tree/main/public)/Steineundso.stl"></script>
+<script src="https://embed.github.com/view/3d/Noartroom/noartroom.github.io/tree/main/public/Steineundso.stl"></script>
 
 
 ```stl
