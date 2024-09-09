@@ -89,6 +89,26 @@ const posts = (await getCollection('blog')).sort(
 		<Header />
 		<main>
 			<section>
+				<div class="model-viewer-container">
+					<model-viewer
+						environment-image="/assets/env.hdr"
+						exposure="1.1"
+						autoplay
+						disable-pan
+						disable-zoom
+						min-camera-orbit="auto 80deg auto"
+						max-camera-orbit="auto 80deg auto"
+						shadow-intensity="1"
+						shadow-softness="0"
+						camera-controls
+						touch-action="pan-y"
+						interaction-prompt="none"
+						auto-rotate
+						auto-rotate-delay="0"
+						rotation-per-second="-5deg"
+					/>
+				</div>
+			<section>
 				<ul>
 					{
 						posts.map((post) => (
