@@ -3,7 +3,7 @@
 // all pages through the use of the <BaseHead /> component.
 import '../styles/global.css';
 
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 
 interface Props {
 	title: string;
@@ -47,7 +47,7 @@ const { title, description } = Astro.props;
 
 	<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap-index.xml" />
 
-	<ViewTransitions /> <!-- todo: add fallback="none" ? -->
+	<ClientRouter /> <!-- todo: add fallback="none" ? -->
 <!-- This is intentionally inlined to avoid FOUC todo: test whether flash appears on browsers with preference dark -->
 <!-- <script is:inline>
 	const root = document.documentElement
