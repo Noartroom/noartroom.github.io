@@ -24,7 +24,7 @@ const posts = (await getCollection('blog'));
 						posts.map((post) => (
 							<li>
 								<a href={`/${post.id}/`}>
-									<Image width={720} height={360} src={post.data.heroImage} alt="" loading="eager" />
+									<Image width={720} height={360} src={post.data.heroImage} alt="" format="avif" loading="eager" />
 									<h4 class="title">{post.data.title}</h4>
 									<p class="date">
 										<FormattedDate date={post.data.pubDate} />
