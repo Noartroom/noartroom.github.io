@@ -33,3 +33,11 @@ Any static assets, like images, can be placed in the `public/` directory.
 Astro JS Starter Kit
 
 Inspiration from Blog by GH user nemanjam - check it out
+
+-------------------------------------------------------
+
+## Documentation
+
+Image optimization: 
+
+3d model optimization:
