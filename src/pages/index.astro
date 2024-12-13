@@ -26,7 +26,7 @@ const posts = (await getCollection('blog'));
 									<Image width={720} height={360} src={post.data.heroImage} alt="" format="avif" loading="eager" />
 									<h4 class="title">{post.data.title}</h4>
 									<p class="date">
-										<time datetime={post.data.pubDate.toLocaleString()}>{post.data.pubDate.toLocaleString()}</time>
+										<time datetime={post.data.pubDate.toISOString()}>{post.data.pubDate.toLocaleString()}</time>
 									</p>
 								</a>
 							</li>
@@ -34,77 +34,27 @@ const posts = (await getCollection('blog'));
 					}
 				</ul>
 			</section>
-			<!-- <section>
+			<section>
 				<div class="model-container">
 					<model-viewer
-						id="model_1"
-						alt="Glas Pflanze 2"
-						src="/models/glas_pflanze_2.glb"
-						exposure="1.1"
+						alt="3d model noartroom"
+						src="/models/IMAGE3D-1.glb"
 						autoplay
-						disable-pan
-						disable-zoom
-						min-camera-orbit="auto 80deg auto"
-						max-camera-orbit="auto 80deg auto"
+						min-camera-orbit="auto 0deg auto"
+						max-camera-orbit="auto 360deg auto"
 						shadow-intensity="1"
 						shadow-softness="0"
 						camera-controls
 						touch-action="pan-y"
-						interaction-prompt="none"
 						auto-rotate
-						auto-rotate-delay="0"
+						auto-rotate-delay="100"
 						rotation-per-second="-5deg"
 					>
-					<div class="progress-bar" slot="progress-bar">
-						<div class="update-bar"></div>
-					</div>
 					</model-viewer>
 				</div>
-			</section> -->
+			</section>
+			<script> import '@google/model-viewer'</script>
 		</main>
-		
-		<!-- todo: 
-		Check lazy loading implementation. 
-		find out which leads to best performance. 
-		Try create seperate component for web component?
-		
-		- Google cdn takes longest but once saved loads everything fastest: <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
-		- jsdelivr is faster but takes longer to load assets: <script src="https://cdn.jsdelivr.net/npm/@google/model-viewer/dist/model-viewer.min.js"></script>
-		- import statment seems to be fastest : <script> import '@google/model-viewer'</script>     
-		 
-		 -->	
-		<!-- <script type="module">
-			const body = document.body;
-			let loaded = false;
-		
-			const onInteraction = () => {
-			  if (loaded === true) {
-				return;
-			  }
-			  loaded = true;
-		
-			  const modelViewer = document.createElement('script'); 
-			  modelViewer.type = 'module';
-			  modelViewer.src = '../node_modules/@google/model-viewer/dist/model-viewer.min.js'; 
-			  body.appendChild(modelViewer);
-			};
-		
-			body.addEventListener('mouseover', onInteraction, {once:true});
-			body.addEventListener('touchmove', onInteraction, {once:true});
-			body.addEventListener('scroll', onInteraction, {once:true});
-			body.addEventListener('keydown', onInteraction, {once:true});
-		
-			const onProgress = (event) => {
-			  const progressBar = event.target.querySelector('.progress-bar');
-			  const updatingBar = event.target.querySelector('.update-bar');
-			  updatingBar.style.width = `${event.detail.totalProgress*100}%`;
-			  if (event.detail.totalProgress == 1) {
-				progressBar.classList.add('hide');
-			  }
-			};
-		
-			document.querySelector('#model_1').addEventListener('progress', onProgress);
-		</script> -->
 		<Footer />
 	</body>
 </html>
