@@ -45,3 +45,4 @@ Image optimization:
 
 3d model optimization:
 - adding 3d model basic working example increases GH Pages size by more than 10x
+- test attributes and settings from model-viewer web component https://modelviewer.dev/docs/
