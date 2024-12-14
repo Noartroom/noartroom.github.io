@@ -39,5 +39,9 @@ Inspiration from Blog by GH user nemanjam - check it out
 ## Documentation
 
 Image optimization: 
+- <Image> tag is used
+- avif format
+- width and height provided
 
 3d model optimization:
+- adding 3d model basic working example increases GH Pages size by more than 10x
