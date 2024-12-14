@@ -39,16 +39,11 @@ const posts = (await getCollection('blog'));
 					<model-viewer
 						alt="3d model noartroom"
 						src="/models/IMAGE3D-1.glb"
-						autoplay
-						min-camera-orbit="auto 0deg auto"
-						max-camera-orbit="auto 360deg auto"
-						shadow-intensity="1"
-						shadow-softness="0"
 						camera-controls
+						min-camera-orbit="auto 0deg auto"
+						max-camera-orbit="auto 80deg auto"
 						touch-action="pan-y"
 						auto-rotate
-						auto-rotate-delay="100"
-						rotation-per-second="-5deg"
 					>
 					</model-viewer>
 				</div>
@@ -67,7 +62,7 @@ const posts = (await getCollection('blog'));
 				min-width: 300px;
 				display: flex;
 				justify-content: center;
-				margin: 4em;
+				margin: 6em;
 			}
 			ul {
 				display: flex;
