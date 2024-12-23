@@ -1,9 +1,9 @@
 ---
 import { Image } from 'astro:assets';
-import logo from '../assets/images/logo.webp';
+import logo from '../assets/images/logo-2.webp';
 ---
 <a href="/">
-  <Image width={75} height={50} src={logo} alt="Logo" loading="eager" />
+  <Image width={75} height={50} src={logo} format="avif" alt="Logo" loading="eager" />
   <!-- <img alt="Logo" src="images/logo.webp" width="75" height="50" /> -->
 </a>
 <!-- todo: logo refactor with astro optimization and add padding and testing  -->
