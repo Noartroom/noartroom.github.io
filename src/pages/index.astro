@@ -61,22 +61,6 @@ const posts = (await getCollection('blog'));
 				</div>
 			</section>
 			<script>
-				const body = document.body;
-				let loaded = false;
-				const onInteraction = () => {		  
-					if(loaded === true) {
-						return;
-					}
-					loaded = true;
-					const modelViewer = document.createElement('script');
-					modelViewer.src = '../../node_modules/@google/model-viewer/dist/model-viewer.js';
-					modelViewer.type = 'module';
-					body.appendChild(modelViewer);
-				};
-				body.addEventListener('mouseover', onInteraction, {once:true});
-				body.addEventListener('touchmove', onInteraction, {once:true});
-				body.addEventListener('scroll', onInteraction, {once:true});
-				body.addEventListener('keydown', onInteraction, {once:true});
 			
 				const onProgress = (event: Event) => {
 				  const progressBar = (event.target as HTMLElement).querySelector('.progress-bar');
