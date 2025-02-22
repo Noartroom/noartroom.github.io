@@ -9,6 +9,9 @@ import { Image } from 'astro:assets';
 const posts = (await getCollection('blog'));
 ---
 
+<!-- todo
+ remove webp for blog-placeholder images (avif)? or are both needed -> then add webp for logo-2 -->
+
 <!doctype html>
 <html lang="en">
 	<head>
@@ -23,7 +26,7 @@ const posts = (await getCollection('blog'));
 						posts.map((post) => (
 							<li>
 								<a href={`/${post.id}/`}>
-									<Image width={720} height={360} src={post.data.heroImage} alt="" format="avif" loading="eager" />
+									<Image width={720} height={360} src={post.data.heroImage} alt={post.data.description} format="avif" loading="eager" />
 									<h4 class="title">{post.data.title}</h4>
 									<p class="date">
 										<time datetime={post.data.pubDate.toISOString()}>{post.data.pubDate.toLocaleString()}</time>
@@ -35,21 +38,71 @@ const posts = (await getCollection('blog'));
 				</ul>
 			</section>
 			<section>
-				<div class="model-container">
+				<div class="model-container"> <!-- align="center" -->
+					<!-- other attributes: poster = webp file  ar  ar-status="not-presenting" auto-rotate -->
 					<model-viewer
-						alt="3d model noartroom"
-						src="/models/IMAGE3D-1.glb"
+						id="model_1"
+						src="/models/m13D.glb"
+						poster="/images/m1frame.webp"
+						camera-orbit="1.2195rad 1.362rad 100%"  
+						interaction-prompt-threshold="0"
+						shadow-intensity="1"
 						camera-controls
-						min-camera-orbit="auto 0deg auto"
-						max-camera-orbit="auto 80deg auto"
-						touch-action="pan-y"
-						auto-rotate
+						alt="3d model one"
 					>
+
+ 					  <div class="poster" slot="poster" style="background-image: url(/images/m1frame.webp);">
+ 						<img class="pre-prompt" src="/prompt.svg"/>
+					  </div>
+					  <div class="progress-bar" slot="progress-bar">
+						<div class="update-bar" style="width: 100%;"></div>
+					  </div>
 					</model-viewer>
 				</div>
 			</section>
-			<script> import '@google/model-viewer'</script>
-		</main>
+			<script>
+				const body = document.body;
+				let loaded = false;
+				const onInteraction = () => {		  
+					if(loaded === true) {
+						return;
+					}
+					loaded = true;
+					const modelViewer = document.createElement('script');
+					modelViewer.src = '../node_modules/@google/model-viewer/dist/model-viewer.js';
+					modelViewer.type = 'module';
+					body.appendChild(modelViewer);
+				};
+				body.addEventListener('mouseover', onInteraction, {once:true});
+				body.addEventListener('touchmove', onInteraction, {once:true});
+				body.addEventListener('scroll', onInteraction, {once:true});
+				body.addEventListener('keydown', onInteraction, {once:true});
+			
+				const onProgress = (event: Event) => {
+				  const progressBar = (event.target as HTMLElement).querySelector('.progress-bar');
+				  const updatingBar = (event.target as HTMLElement).querySelector('.update-bar');
+				  if (updatingBar) {
+					  (updatingBar as HTMLElement).style.width = `${(event as CustomEvent).detail.totalProgress * 100}%`;
+				  };
+				 //  setTimeout(() => {
+
+				  if ((event as CustomEvent).detail.totalProgress == 1) {
+					if (progressBar) {
+						progressBar.classList.add('hide');
+					}
+				  };
+				}; // Delay of 1 second before loading the model-viewer
+
+				
+			
+				const modelElement = document.querySelector('#model_1');
+				if (modelElement) {
+					modelElement.addEventListener('progress', onProgress);
+				}
+
+			  </script>
+<!-- 			<script> import '@google/model-viewer'</script> 
+ -->		</main>
 		<Footer />
 	</body>
 </html>
@@ -57,12 +110,86 @@ const posts = (await getCollection('blog'));
 			main {
 				width: 960px;
 			}
-			div.model-container {
-				min-height: 300px;
+			div.model-container {  
+				box-sizing: border-box; 
+				text-align: -webkit-center; 
+			/* 	min-height: 300px;
 				min-width: 300px;
 				display: flex;
 				justify-content: center;
-				margin: 6em;
+				margin: 6em; */
+			}
+			model-viewer {
+				display: block;
+				width: 100vw;
+				height: 100vw;
+				max-width: 600px;
+				max-height: 600px;
+			}
+			/* This keeps child nodes hidden while the element loads, except the poster */
+			:not(:defined) > :not(.poster) {
+				display: none;
+			}
+			:defined > .poster > .pre-prompt {
+				display: none;
+			}
+
+			/* This CSS should always be used at minimum for any slotted poster */
+			.poster {
+				display: flex;
+				justify-content: center;
+				align-items: center; 
+				height: 100%;
+				top: 0;
+				left: 0;
+				background-size: contain;
+				background-repeat: no-repeat;
+				background-position: center;
+			}
+			@keyframes wiggle {	
+				10%, 12% { transform: translateX(-25px); }	 
+				30%, 32% { transform: translateX(25px); }	
+				0%, 45%, 100% { transform: translateX(0%); }
+			}	
+			@keyframes fade {	
+				5%, 40% { opacity: 1; }	
+				0%, 45%, 100% {	opacity: 0; }	 
+			}
+			.pre-prompt {
+				pointer-events: none;
+				animation-name: wiggle, fade;
+				animation-duration: 5s;
+				animation-iteration-count: infinite;
+				animation-timing-function: ease-in-out;
+			}
+
+			.progress-bar {
+				display: block;
+				width: 33%;
+				height: 10%;
+				max-height: 2%;
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				transform: translate3d(-50%, -50%, 0);
+				border-radius: 25px;
+				box-shadow: 0px 3px 10px 3px rgba(0, 0, 0, 0.5), 0px 0px 5px 1px rgba(0, 0, 0, 0.6);
+				border: 1px solid rgba(255, 255, 255, 0.9);
+				background-color: rgba(0, 0, 0, 0.5);
+			}
+		
+			.progress-bar.hide {
+				visibility: hidden;
+				transition: visibility 0.3s;
+			}
+		
+			.update-bar {
+				background-color: rgba(255, 255, 255, 0.9);
+				width: 0%;
+				height: 100%;
+				border-radius: 25px;
+				float: left;
+				transition: width 0.3s;
 			}
 			ul {
 				display: flex;
@@ -79,21 +206,9 @@ const posts = (await getCollection('blog'));
 				text-decoration: none;
 				transition: 0.2s ease;
 			}
-			/* ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			} */
 			ul li:first-child .title {
 				font-size: 2.369rem;
 			}
-			/* ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			} */
 			ul li a {
 				display: block;
 			}

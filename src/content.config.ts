@@ -12,7 +12,6 @@ schema: ({ image }) => z.object({
 	updatedDate: z.coerce.date().optional(),
 	heroImage: image(),
 	imageAlt: z.string().optional(),
-		// imageAlt: z.string().optional(),
 	}),
 });
 
