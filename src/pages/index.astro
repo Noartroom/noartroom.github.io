@@ -19,46 +19,83 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 		<main>	
 			<section>
 				<div class="model-container"> <!-- align="center" -->
-					<!-- other attributes: poster = webp file  ar  ar-status="not-presenting" auto-rotate -->
+					<!-- other attributes: poster = webp file  ar  ar-status="not-presenting" auto-rotate orbit-sensitivity="number"with-credentials="true" -->
 					<model-viewer
 						id="model_1"
 						src="/models/m13D.glb"
-						poster="/images/m1frame.webp"
+						poster="/images/m1frameKopieHEIF.heic"
 						min-camera-orbit="auto 0deg auto"
-						max-camera-orbit="auto 80deg auto" 
-						interaction-prompt-threshold="0"
+						max-camera-orbit="auto 180deg auto" 
+						interaction-prompt="auto"
+						interaction-prompt-threshold="2000"
 						shadow-intensity="1"
 						camera-controls
-						alt="3d model one"
-					>
+						reveal="manual"
+						disable-zoom
+						
+						alt="3d model of a framed rendering"
+					>	
+						<div class="progress-bar hide" slot="progress-bar">
+							<div class="update-bar" style="width: 100%;"></div>
+						</div>
+						<div class="loadButtonContainer" slot="progress-bar">
+													<button class="loadButton">Load 3D Model</div>
 
- 					  <div class="poster" slot="poster" style="background-image: url(/images/m1frame.webp);">
- 						<img class="pre-prompt" src="/prompt.svg"/>
+						</div>
+
 					  </div>
-					  <div class="progress-bar" slot="progress-bar">
-						<div class="update-bar" style="width: 100%;"></div>
-					  </div>
+	
 					</model-viewer>
 				</div>
 			</section>
 			<script>
+				// Function to update the progress bar based on the model loading progress
+				/* const onLoad = (event: Event) => {
+				  const loadModel = (event.target as HTMLElement).querySelector("button");
+				  if (loadModel) {
+				 	loadModel.classList.add('hide'); 
+ 					loadModel.remove();
+ 				  }
+				}; */
+			
 				const onProgress = (event: Event) => {
 				  const progressBar = (event.target as HTMLElement).querySelector('.progress-bar');
 				  const updatingBar = (event.target as HTMLElement).querySelector('.update-bar');
-				  if (updatingBar) {
-					  (updatingBar as HTMLElement).style.width = `${(event as CustomEvent).detail.totalProgress * 100}%`;
-				  };
-				  if ((event as CustomEvent).detail.totalProgress == 1) {
-					if (progressBar) {
-						progressBar.classList.add('hide');
-					}
-				  };
+				  if (progressBar) {
+						
+					
+					if (updatingBar) {
+						progressBar.classList.remove('hide');
+						(updatingBar as HTMLElement).style.width = `${(event as CustomEvent).detail.totalProgress * 100}%`;
+					};
+					if ((event as CustomEvent).detail.totalProgress == 1) {
+						if (progressBar) {
+							progressBar.classList.add('hide');
+						}
+					};
+				  }
 				}; 
 				const modelElement = document.querySelector('#model_1');
-				if (modelElement) {
-					modelElement.addEventListener('progress', onProgress);
+ 				
+ 				if (modelElement) {
+/* 					modelElement.addEventListener('load', onLoad);
+ */					
+				const loadButton = document.querySelector('.loadButton');
+				const loadButtonContainer = document.querySelector('.loadButtonContainer');
+				if(loadButton) {
+					loadButton.addEventListener('click', () => {
+						if (modelElement) {
+							(modelElement as any).dismissPoster();
+							loadButton.classList.add('hide');
+							modelElement.addEventListener('progress', onProgress);
+						}
+						if (loadButtonContainer) {
+							loadButtonContainer.classList.add('hide');
+						}
+					}); 
 				}
-			  </script>
+				}
+			</script>
  			<script> import '@google/model-viewer'</script> 
 		</main>
 		<Footer />
@@ -90,6 +127,18 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 			}
 			:defined > .poster > .pre-prompt {
 				display: none;
+			}
+
+			.loadButtonContainer {
+				display: block;
+				width: 33%;
+				height: 10%;
+				max-height: 2%;
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				transform: translate3d(-50%,-50%,0);
+				border-radius: 25px;
 			}
 
 			/* This CSS should always be used at minimum for any slotted poster */
@@ -138,7 +187,37 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 		
 			.progress-bar.hide {
 				visibility: hidden;
-				transition: visibility 0.3s;
+			}
+
+			.loadButtonContainer.hide {
+				visibility: hidden;
+			}
+
+			.loadButton {
+				background: linear-gradient(135deg, #ff7e5f, #feb47b);
+				color: white;
+				border: none;
+				padding: 10px 20px;
+				font-size: 1rem;
+				font-weight: bold;
+				border-radius: 25px;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+				transition: transform 0.2s, box-shadow 0.2s;
+			}
+
+			.loadButton:hover {
+				cursor: pointer;
+				transform: scale(1.05);
+				box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+			}
+
+			.loadButton:active {
+				transform: scale(0.95);
+				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			}
+
+			.loadButton.hide {
+				visibility: hidden;
 			}
 		
 			.update-bar {
