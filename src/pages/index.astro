@@ -32,17 +32,14 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 						camera-controls
 						reveal="manual"
 						disable-zoom
-						
 						alt="3d model of a framed rendering"
 					>	
 						<div class="progress-bar hide" slot="progress-bar">
 							<div class="update-bar" style="width: 100%;"></div>
 						</div>
 						<div class="loadButtonContainer" slot="progress-bar">
-													<button class="loadButton">Load 3D Model</div>
-
+							<button class="loadButton">Load 3D Model</div>
 						</div>
-
 					  </div>
 	
 					</model-viewer>
@@ -50,14 +47,6 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 			</section>
 			<script>
 				// Function to update the progress bar based on the model loading progress
-				/* const onLoad = (event: Event) => {
-				  const loadModel = (event.target as HTMLElement).querySelector("button");
-				  if (loadModel) {
-				 	loadModel.classList.add('hide'); 
- 					loadModel.remove();
- 				  }
-				}; */
-			
 				const onProgress = (event: Event) => {
 				  const progressBar = (event.target as HTMLElement).querySelector('.progress-bar');
 				  const updatingBar = (event.target as HTMLElement).querySelector('.update-bar');
