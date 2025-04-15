@@ -35,7 +35,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 						alt="3d model of a framed rendering"
 					>	
 						<div class="progress-bar hide" slot="progress-bar">
-							<div class="update-bar" style="width: 100%;"></div>
+							<div class="update-bar"></div>
 						</div>
 						<div class="loadButtonContainer" slot="progress-bar">
 							<button class="loadButton">Load 3D Model</div>
@@ -48,35 +48,41 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 			<script>
 				// Function to update the progress bar based on the model loading progress
 				const onProgress = (event: Event) => {
-				  const progressBar = (event.target as HTMLElement).querySelector('.progress-bar');
-				  const updatingBar = (event.target as HTMLElement).querySelector('.update-bar');
-				  if (progressBar) {
-						
+				  if (!progressBarElement || !updatingBarElement) return;
+
+				  const percentProgress = (event as CustomEvent).detail?.totalProgress ?? 0;
+				  const percentComplete = percentProgress * 100;
+				  (updatingBarElement as HTMLElement).style.width = `${percentComplete}%`;
+				  (updatingBarElement as HTMLElement).style.width = `${percentComplete}%`;
 					
-					if (updatingBar) {
-						progressBar.classList.remove('hide');
-						(updatingBar as HTMLElement).style.width = `${(event as CustomEvent).detail.totalProgress * 100}%`;
-					};
-					if ((event as CustomEvent).detail.totalProgress == 1) {
-						if (progressBar) {
-							progressBar.classList.add('hide');
-						}
-					};
-				  }
+				  if (percentProgress == 1) {
+					setTimeout(() => {
+						progressBarElement.classList.add('hide');
+					}, 300);
+				  };
 				}; 
+
+				const progressBarElement = document.querySelector('.progress-bar'); // Use a more specific ID or class if needed
+				const updatingBarElement = document.querySelector('.update-bar');
 				const modelElement = document.querySelector('#model_1');
+
+				function initializeLoadingBar() {
+					if (progressBarElement && updatingBarElement) {
+						(updatingBarElement as HTMLElement).style.width = '0%';
+						progressBarElement.classList.remove('hide'); 
+					}
+				}
  				
- 				if (modelElement) {
-/* 					modelElement.addEventListener('load', onLoad);
- */					
+ 				if (modelElement) {				
 				const loadButton = document.querySelector('.loadButton');
 				const loadButtonContainer = document.querySelector('.loadButtonContainer');
 				if(loadButton) {
 					loadButton.addEventListener('click', () => {
 						if (modelElement) {
 							(modelElement as any).dismissPoster();
-							loadButton.classList.add('hide');
+							initializeLoadingBar();
 							modelElement.addEventListener('progress', onProgress);
+							loadButton.classList.add('hide');
 						}
 						if (loadButtonContainer) {
 							loadButtonContainer.classList.add('hide');
