@@ -3,7 +3,14 @@ import { Image } from 'astro:assets';
 import logo from '../assets/images/logo-2.webp';
 ---
 <a href="/">
-  <Image width={75} height={50} src={logo} format="avif" alt="Logo" loading="eager" />
+  <Image 
+    src={logo} 
+    format="avif" 
+    alt="Logo" 
+    priority 
+  />
   <!-- <img alt="Logo" src="images/logo.webp" width="75" height="50" /> -->
 </a>
-<!-- todo: logo refactor with astro optimization and add padding and testing  -->
+<!-- todo: logo refactor with astro optimization 
+ priority: automatically sets loading="eager", decoding="sync", and fetchpriority="high" to ensure the image loads immediately
+ and add padding and testing  -->

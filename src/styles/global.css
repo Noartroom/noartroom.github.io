@@ -119,6 +119,13 @@ html.dark {
 .dark .nav-links a {
   color: #fff;
 }
+
+/* distinct outline for focusable elements for keyboard users */
+:is(a, button):focus-visible {
+  outline: 2px solid var(--accent, #5c6afd);
+  outline-offset: 2px;
+}
+
 @media (max-width: 720px) {
 	body {
 		font-size: 18px;

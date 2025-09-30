@@ -1,0 +1,314 @@
+---
+export interface Props {
+  lightSrc: string;
+  darkSrc: string;
+  poster?: string;
+  alt: string;
+}
+const { lightSrc, darkSrc, alt, poster } = Astro.props;
+---
+<!-- other attributes: poster = webp file  
+ poster="/images/m1frameKopieHEIF.heic"
+ style="background-color: transparent;"
+         interaction-prompt="auto"
+        interaction-prompt-threshold="1000"
+ ar  ar-status="not-presenting" auto-rotate orbit-sensitivity="number"with-credentials="true" -->
+
+<div class="model-wrapper" data-light-src={lightSrc} data-dark-src={darkSrc}>
+    <model-viewer
+        class="viewer"
+        alt={alt}
+        shadow-intensity="1"
+        camera-controls
+        camera-orbit="45deg 55deg 10m"
+        reveal="manual"
+        exposure="1"
+    >   
+        <div class="progress-bar hide" slot="progress-bar" aria-label="Loading model: 0% complete" aria-valuenow="0">
+            <div class="update-bar"></div>
+        </div>
+
+        <button 
+            slot="poster" 
+            class="poster-button" 
+            style={poster ? `--poster-bg: url(${poster})` : ''}
+            ><span class="button-text">Load 3D Model</span>
+        </button>
+        <div class="error-message hide" slot="poster">
+          <p>Sorry, 3D model could not be loaded.</p>
+        </div>
+    </model-viewer>
+</div>
+
+<script>
+import '@google/model-viewer';
+import type { ModelViewerElement } from '@google/model-viewer';
+
+function initInteractiveModel(modelWrapper: HTMLElement) {
+    // We select the component's root element
+    if ((modelWrapper as any)._modelInitialized) return;
+    (modelWrapper as any)._modelInitialized = true;
+
+    const modelViewer = modelWrapper.querySelector('.viewer') as ModelViewerElement;
+    if (!modelViewer) return;
+
+    const progressBar = modelWrapper.querySelector('.progress-bar') as HTMLElement;
+    const updateBar = modelWrapper.querySelector('.update-bar') as HTMLElement;
+    const posterButton = modelWrapper.querySelector('.poster-button') as HTMLElement;
+    const errorMessage = modelWrapper.querySelector('.error-message') as HTMLElement;
+
+    // --- Event Listeners ---
+    posterButton?.addEventListener('click', () => {
+        // 1. Determine the correct src based on the current theme.
+        const isDark = document.documentElement.classList.contains('dark');
+        const lightSrc = modelWrapper.dataset.lightSrc;
+        const darkSrc = modelWrapper.dataset.darkSrc;
+        
+        if (lightSrc && darkSrc) {
+            // 2. Set the 'src' attribute now, on the ready component.
+            modelViewer.src = isDark ? darkSrc : lightSrc;
+        }
+
+        // 3. Now that the src is set, dismiss the poster to start loading.
+        modelViewer.dismissPoster();
+        progressBar?.classList.remove('hide');
+        
+        // 4. Add the 'load' listener for post-load actions.
+        modelViewer.addEventListener('load', () => {
+            updateModelThemes();
+            startOrbitAnimation(modelViewer);
+        }, { once: true });
+    });
+
+    modelViewer.addEventListener('progress', (event) => {
+        const progress = (event as unknown as CustomEvent).detail.totalProgress;
+        const percent = Math.round(progress * 100);
+        if (progressBar && updateBar) {
+            progressBar.setAttribute('aria-valuenow', `${percent}`);
+            updateBar.style.width = `${percent}%`;
+        }
+        if (progress === 1) {
+            setTimeout(() => progressBar?.classList.add('hide'), 500);
+        }
+    });
+
+    modelViewer.addEventListener('error', (event) => {
+        console.error('Model Viewer Error:', (event as unknown as CustomEvent).detail);
+        errorMessage?.classList.remove('hide');
+        posterButton?.classList.add('hide'); // Hide the load button on error
+    });
+}
+
+// --- Initial camera animation ---
+function startOrbitAnimation(modelViewer: ModelViewerElement) {
+   // The initial state is already set by the HTML. We just define a target.
+    const targetOrbit = "-45deg 75deg 8m";
+    let animationTimeout: ReturnType<typeof setTimeout>;
+
+    // Plan the animation for 2 seconds in the future.
+    animationTimeout = setTimeout(() => {
+        modelViewer.cameraOrbit = targetOrbit;
+    }, 3000);
+
+    // If the user interacts before the 2 seconds are up, cancel the animation.
+    modelViewer.addEventListener('pointerdown', () => {
+        clearTimeout(animationTimeout);
+    }, { once: true });
+}
+
+async function updateModelThemes() {
+   /* const modelWrapper = document.querySelector('.model-wrapper') as HTMLElement;
+    if (!modelWrapper) return;
+
+    const modelViewer = modelWrapper.querySelector('.viewer') as ModelViewerElement;
+    const { lightSrc, darkSrc } = modelWrapper.dataset;
+    if (!modelViewer || !lightSrc || !darkSrc) return;
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const newSrc = isDark ? darkSrc : lightSrc;
+
+    // Only swap if the src is actually different
+    if (modelViewer.src === newSrc) return;
+
+    // --- VIEW TRANSITION LOGIC ---
+    // Check if the browser supports View Transitions
+    if (!document.startViewTransition) {
+        modelViewer.src = newSrc; // Fallback for older browsers
+        return;
+    }
+
+    // Use a View Transition to create a smooth cross-fade
+    document.startViewTransition(() => {
+        modelViewer.src = newSrc;
+    });
+    await modelViewer.updateComplete; // Wait for the model to finish updating */
+
+    const modelWrapper = document.querySelector('.model-wrapper') as HTMLElement;
+    if (!modelWrapper) return;
+
+    const modelViewer = modelWrapper.querySelector('.viewer') as ModelViewerElement;
+    const { lightSrc, darkSrc } = modelWrapper.dataset;
+    if (!modelViewer || !lightSrc || !darkSrc) return;
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const newSrc = isDark ? darkSrc : lightSrc;
+
+    // This guard clause now prevents the error.
+    if (modelViewer.src && modelViewer.src.endsWith(newSrc)) return;
+
+    // --- VIEW TRANSITION LOGIC ---
+    if (!document.startViewTransition) {
+        modelViewer.src = newSrc;
+        return;
+    }
+
+    document.startViewTransition(() => {
+        modelViewer.src = newSrc;
+    });
+}
+
+// --- Main Execution ---
+function setup() {
+    // Find and initialize all instances of the component on the page.
+    document.querySelectorAll('.model-wrapper').forEach(modelWrapper => {
+        initInteractiveModel(modelWrapper as HTMLElement);
+    });
+     // Find your theme toggle button by its ID.
+    const themeToggleButton = document.getElementById('themeToggle');
+    // If the button exists and we haven't already attached a listener...
+    if (themeToggleButton && !(themeToggleButton as any)._modelThemeListenerAttached) {
+        
+        themeToggleButton.addEventListener('click', () => {
+            // We use a tiny delay. This is a standard and reliable technique to ensure
+            // the ThemeIcon script has finished toggling the .dark class
+            // *before* our updateModelThemes function runs to check for it.
+             setTimeout(updateModelThemes, 50);
+        });
+
+        // Mark the button so we don't attach this listener multiple times.
+        (themeToggleButton as any)._modelThemeListenerAttached = true;
+    }
+}
+
+// Run setup on initial load and after every page swap for View Transitions.
+document.addEventListener('DOMContentLoaded', setup);
+document.addEventListener('astro:after-swap', setup);
+</script>
+
+<style>
+  /* Scoped styles for this component only */
+
+  /* --- Optional CSS for View Transitions --- */
+  /* This makes the cross-fade animation a bit slower and smoother */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.5s;
+  }
+
+  .model-wrapper {
+    width: 100%;
+    max-width: 720px;
+    height: 600px;
+    margin: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* The wrapper is now always transparent */
+    background-color: transparent;
+  }
+  
+  model-viewer {
+    width: 100%;
+    height: 100%;
+    --mv-progress-bar-color: var(--accent, #5c6afd);
+  }
+
+  :global(html.dark) model-viewer {
+    --mv-progress-bar-color: var(--accent, #5c6afd);
+  }
+
+  .poster-button {
+    background-image: var(--poster-bg);
+    background-color: transparent;
+    /* background-color: #e0e0e0; */ /* Fallback color if no image */ /*  TODO remove */
+    /* background-size: cover; */ /*  TODO remove */
+    background-position: center;
+
+    /* --- General Button Styles --- */
+    width: 100%;
+    height: 100%;
+    border: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: opacity 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #ff7e5f, #feb47b);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 25px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer; */
+  }
+
+  .poster-button:hover {
+    opacity: 0.9;
+    /* transform: translate(-50%, -50%) scale(1.05); */
+    /* box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); */
+  }
+
+  .poster-button .button-text {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    backdrop-filter: blur(5px);
+  }
+
+  .error-message {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #333;
+        background-color: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        pointer-events: none;
+    }
+
+  .progress-bar {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 33%;
+    height: 16px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    overflow: hidden;
+    /* transition: visibility 0s linear 0.3s; */
+  }
+
+  .update-bar {
+    width: 0%;
+    height: 100%;
+    background-color: var(--mv-progress-bar-color);
+    border-radius: 8px;
+    transition: width 0.3s ease-out;
+  }
+
+  .hide { display: none !important; } /*  Previously visibility:hidden for progress-bar only  */
+</style>

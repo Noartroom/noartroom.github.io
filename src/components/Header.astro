@@ -2,7 +2,6 @@
 /* todo: refactor a la nemanjam.github.io
 import { SITE_TITLE } from '../consts'; */
 import ThemeIcon from './ThemeIcon.astro';
-import Logo from "./Logo.astro";
 import Nav from "./Nav.astro";
 
 const { current = '' } = Astro.props;
@@ -19,7 +18,7 @@ const { current = '' } = Astro.props;
 	}
 </style>
 <header>
-	<Logo />
+	
 	<Nav current={current} />
 	<ThemeIcon /> 
 </header>

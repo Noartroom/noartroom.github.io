@@ -2,6 +2,7 @@
 // Import the global.css file here so that it is included on
 // all pages through the use of the <BaseHead /> component.
 import '../styles/global.css';
+import ThemeSetup from './ThemeSetup.astro';
 
 import { ClientRouter } from 'astro:transitions';
 
@@ -17,14 +18,32 @@ const { title, description } = Astro.props;
 
 	<!-- Global Metadata -->
 	<meta charset="utf-8" />
+	<ThemeSetup />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
 
 <!-- 	apparently not supported for firefox, android, opera: check nemanjam whether to change theming -->	
 	<meta name="theme-color" content="#c1ddf9" media="(prefers-color-scheme: light)" />
 	<meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
 
-	<link rel="icon" type="image/svg+xml" href="/favicon.ico" />
-	<!-- todo: make 3 icons with sizes:"180x180" , 32X32, 16X16 -->	
+	<!-- <link rel="icon" type="image/svg+xml" href="/favicon.ico" /> -->
+	<!-- todo: make 3 icons with different sizes inside manifest.json: "180x180" , 32X32, 16X16
+	 // icons
+  //  {
+        //     {
+        //         "sizes": "128x128",
+        //         "src": "favicon.ico",
+        //         "type": "image/svg"
+        //     },
+        //     {
+        //         "sizes": "192x192",
+        //         "src": "favicon.ico",
+        //         "type": "image/svg"
+        //     },
+        //     {
+        //         "sizes": "512x512",
+        //         "src": "favicon.ico",
+        //         "type": "image/svg"
+        //     } -->	
 	<meta name="generator" content={Astro.generator} />
 
 
