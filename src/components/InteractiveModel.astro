@@ -85,12 +85,8 @@ function initInteractiveModel(modelWrapper: HTMLElement) {
     (modelWrapper as any)._modelInitialized = true;
 
     const modelViewer = modelWrapper.querySelector('.viewer') as ModelViewerElement;
-    if (!modelViewer) return;
-
-    const progressBar = modelWrapper.querySelector('.progress-bar') as HTMLElement;
-    const updateBar = modelWrapper.querySelector('.update-bar') as HTMLElement;
     const posterButton = modelWrapper.querySelector('.poster-button') as HTMLElement;
-    const errorMessage = modelWrapper.querySelector('.error-message') as HTMLElement;
+    if (!modelViewer || !posterButton) return;
 
     // --- Event Listeners ---
     posterButton?.addEventListener('click', () => {
@@ -106,14 +102,19 @@ function initInteractiveModel(modelWrapper: HTMLElement) {
 
         // 3. Now that the src is set, dismiss the poster to start loading.
         modelViewer.dismissPoster();
+
+        const progressBar = modelWrapper.querySelector('.progress-bar') as HTMLElement;
         progressBar?.classList.remove('hide');
-        
-        // 4. Add the 'load' listener for post-load actions.
-        modelViewer.addEventListener('load', () => {
-            updateModelThemes();
-            startOrbitAnimation(modelViewer);
-        }, { once: true });
+
+        attachModelListeners(modelViewer, modelWrapper);
     });
+}
+
+function attachModelListeners(modelViewer: ModelViewerElement, modelWrapper: HTMLElement) {
+    const progressBar = modelWrapper.querySelector('.progress-bar') as HTMLElement;
+    const updateBar = modelWrapper.querySelector('.update-bar') as HTMLElement;
+    const errorMessage = modelWrapper.querySelector('.error-message') as HTMLElement;
+    const posterButton = modelWrapper.querySelector('.poster-button') as HTMLElement;
 
     modelViewer.addEventListener('progress', (event) => {
         const progress = (event as unknown as CustomEvent).detail.totalProgress;
@@ -123,14 +124,19 @@ function initInteractiveModel(modelWrapper: HTMLElement) {
             updateBar.style.width = `${percent}%`;
         }
         if (progress === 1) {
-            setTimeout(() => progressBar?.classList.add('hide'), 500);
+           setTimeout(() => progressBar?.classList.add('hide'), 500);
         }
     });
+
+    modelViewer.addEventListener('load', () => {
+        modelViewer.classList.add('is-loaded');
+        startOrbitAnimation(modelViewer);
+    }, { once: true });
 
     modelViewer.addEventListener('error', (event) => {
         console.error('Model Viewer Error:', (event as unknown as CustomEvent).detail);
         errorMessage?.classList.remove('hide');
-        posterButton?.classList.add('hide'); // Hide the load button on error
+        posterButton?.classList.add('hide');
     });
 }
 
@@ -191,27 +197,8 @@ async function updateModelThemes() {
         newViewer.appendChild(oldViewer.firstChild);
     }
 
-    const progressBar = modelWrapper.querySelector('.progress-bar') as HTMLElement;
-    const updateBar = modelWrapper.querySelector('.update-bar') as HTMLElement;
-    
-    newViewer.addEventListener('progress', (event) => {
-        const progress = (event as unknown as CustomEvent).detail.totalProgress;
-        const percent = Math.round(progress * 100);
-        if (progressBar && updateBar) {
-            progressBar.classList.remove('hide');
-            progressBar.setAttribute('aria-valuenow', `${percent}`);
-            updateBar.style.width = `${percent}%`;
-        }
-        if (progress === 1) {
-           setTimeout(() => progressBar?.classList.add('hide'), 500);
-        }
-    });
+    attachModelListeners(newViewer, modelWrapper);
 
-    newViewer.addEventListener('load', () => {
-        startOrbitAnimation(newViewer);
-    }, { once: true });
-
-    // --- NEW DEBUG LOG ---
     console.log('[Theme Change] 🔎 Inspect the new viewer element about to be added:', newViewer);
 
     if (oldViewer.parentNode) {
@@ -348,6 +335,15 @@ document.addEventListener('astro:after-swap', setup);
     width: 100%;
     height: 100%;
     --mv-progress-bar-color: rgba(0, 0, 0, 0.5);;
+  }
+  model-viewer::part(canvas) {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+  }
+
+  /* When the is-loaded class is added, fade in ONLY the canvas */
+  model-viewer.is-loaded::part(canvas) {
+    opacity: 1;
   }
 
   :global(html.dark) model-viewer {
