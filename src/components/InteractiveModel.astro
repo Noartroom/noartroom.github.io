@@ -44,6 +44,41 @@ const { lightSrc, darkSrc, alt, poster } = Astro.props;
 import '@google/model-viewer';
 import type { ModelViewerElement } from '@google/model-viewer';
 
+/**
+ * Pre-fetches a model URL so it's stored in the browser's cache
+ * for instant loading later.
+ * @param {string} url The URL of the model to preload.
+ */
+function preloadModel(url: string) {
+  // DEBUG: Log which specific URL is being fetched for caching.
+  console.log(`[Preload] 🚀 Fetching to cache: ${url}`);
+  fetch(url);
+}
+
+/**
+ * Finds all model components on the page and preloads their assets.
+ */
+function preloadAllModels() {
+  const modelWrappers = document.querySelectorAll('.model-wrapper');
+  // DEBUG: Log how many model components were found.
+  console.log(`[Preload] Found ${modelWrappers.length} model(s) to check for preloading.`);
+
+  modelWrappers.forEach((modelWrapper, index) => {
+    const { lightSrc, darkSrc } = (modelWrapper as HTMLElement).dataset;
+    // DEBUG: Log the data attributes found for each specific model.
+    console.log(`[Preload] Checking Model #${index + 1}:`, { lightSrc, darkSrc });
+
+    if (lightSrc) {
+      preloadModel(lightSrc);
+    }
+
+    // Preload the dark model only if it's different from the light one.
+    if (darkSrc && darkSrc !== lightSrc) {
+      preloadModel(darkSrc);
+    }
+  });
+}
+
 function initInteractiveModel(modelWrapper: HTMLElement) {
     // We select the component's root element
     if ((modelWrapper as any)._modelInitialized) return;
@@ -117,6 +152,76 @@ function startOrbitAnimation(modelViewer: ModelViewerElement) {
 }
 
 async function updateModelThemes() {
+    const modelWrapper = document.querySelector('.model-wrapper') as HTMLElement;
+    if (!modelWrapper) return;
+
+    const oldViewer = modelWrapper.querySelector('model-viewer') as ModelViewerElement;
+    const { lightSrc, darkSrc } = modelWrapper.dataset;
+    if (!oldViewer || !lightSrc || !darkSrc) return;
+
+    if (!oldViewer.src) {
+        console.log('[Theme Change] 🧐 Model not loaded yet. Aborting theme swap for model.');
+        return;
+    }
+    
+    const isDark = document.documentElement.classList.contains('dark');
+    const newSrc = isDark ? darkSrc : lightSrc;
+    
+    if (oldViewer.src && oldViewer.src.endsWith(newSrc)) {
+        console.log(`[Theme Change] 🧐 Model src is already correct. No change needed.`);
+        return;
+    }
+
+    console.log(`[Theme Change] 💥 Recreating model viewer to load: ${newSrc}`);
+
+    const newViewer = document.createElement('model-viewer');
+
+    // --- NEW FIX: Explicitly add the 'viewer' class ---
+    newViewer.classList.add('viewer');
+
+    for (const attr of oldViewer.attributes) {
+        // We already set the class, so we can skip it in the loop
+        if (attr.name === 'class') continue;
+        newViewer.setAttribute(attr.name, attr.value);
+    }
+    
+    newViewer.src = newSrc;
+
+    while (oldViewer.firstChild) {
+        newViewer.appendChild(oldViewer.firstChild);
+    }
+
+    const progressBar = modelWrapper.querySelector('.progress-bar') as HTMLElement;
+    const updateBar = modelWrapper.querySelector('.update-bar') as HTMLElement;
+    
+    newViewer.addEventListener('progress', (event) => {
+        const progress = (event as unknown as CustomEvent).detail.totalProgress;
+        const percent = Math.round(progress * 100);
+        if (progressBar && updateBar) {
+            progressBar.classList.remove('hide');
+            progressBar.setAttribute('aria-valuenow', `${percent}`);
+            updateBar.style.width = `${percent}%`;
+        }
+        if (progress === 1) {
+           setTimeout(() => progressBar?.classList.add('hide'), 500);
+        }
+    });
+
+    newViewer.addEventListener('load', () => {
+        startOrbitAnimation(newViewer);
+    }, { once: true });
+
+    // --- NEW DEBUG LOG ---
+    console.log('[Theme Change] 🔎 Inspect the new viewer element about to be added:', newViewer);
+
+    if (oldViewer.parentNode) {
+      oldViewer.parentNode.replaceChild(newViewer, oldViewer);
+    }
+
+    newViewer.dismissPoster();
+}
+
+// async function updateModelThemes() {
    /* const modelWrapper = document.querySelector('.model-wrapper') as HTMLElement;
     if (!modelWrapper) return;
 
@@ -142,7 +247,7 @@ async function updateModelThemes() {
         modelViewer.src = newSrc;
     });
     await modelViewer.updateComplete; // Wait for the model to finish updating */
-
+/* 
     const modelWrapper = document.querySelector('.model-wrapper') as HTMLElement;
     if (!modelWrapper) return;
 
@@ -150,22 +255,32 @@ async function updateModelThemes() {
     const { lightSrc, darkSrc } = modelWrapper.dataset;
     if (!modelViewer || !lightSrc || !darkSrc) return;
 
+     if (!modelViewer.src) {
+        console.log('[Theme Change] 🧐 Model not loaded yet. Aborting theme swap for model.');
+        return;
+    }
+
     const isDark = document.documentElement.classList.contains('dark');
     const newSrc = isDark ? darkSrc : lightSrc;
 
     // This guard clause now prevents the error.
-    if (modelViewer.src && modelViewer.src.endsWith(newSrc)) return;
+    if (modelViewer.src && modelViewer.src.endsWith(newSrc)) {
+        console.log(`[Theme Change] 🧐 Model src is already correct. No change needed.`);
+        return;
+    }
 
-    // --- VIEW TRANSITION LOGIC ---
+    // --- VIEW TRANSITION LOGIC TRIED AND REMOVED ---
     if (!document.startViewTransition) {
+        console.log(`[Theme Change] 🎨 Swapping model src to: ${newSrc}`);
         modelViewer.src = newSrc;
         return;
     }
 
     document.startViewTransition(() => {
+        console.log(`[Theme Change] 🎨 Swapping model src with View Transition to: ${newSrc}`);
         modelViewer.src = newSrc;
     });
-}
+} */
 
 // --- Main Execution ---
 function setup() {
@@ -191,7 +306,19 @@ function setup() {
 }
 
 // Run setup on initial load and after every page swap for View Transitions.
-document.addEventListener('DOMContentLoaded', setup);
+document.addEventListener('DOMContentLoaded', () => {
+  // Run the standard setup to make the page interactive.
+  setup();
+
+  // Now, use idle time to preload assets for the next interaction.
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(preloadAllModels);
+  } else {
+    // Fallback for older browsers that don't support requestIdleCallback.
+    // Preload after 2 seconds to avoid interfering with the main thread. TODO: adjust if needed
+    setTimeout(preloadAllModels, 2000);
+  }
+});
 document.addEventListener('astro:after-swap', setup);
 </script>
 
