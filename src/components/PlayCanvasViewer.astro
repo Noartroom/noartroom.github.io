@@ -10,7 +10,6 @@
 </div>
 
 <script>
-  import * as pc from 'playcanvas';
 
   // --- Asset Configuration ---
   const ASSET_PATHS = {
@@ -25,7 +24,7 @@
   let animationFrameId: number | null = null;
   let mouseX = window.innerWidth / 2;
   let mouseY = window.innerHeight / 2;
-  let pcApp: pc.Application | null = null;
+  let pcApp: any = null;
 
   // --- WASM Helpers (with corrected, more robust loading) ---
   function unpack_coords(packed_val: bigint) {
@@ -74,65 +73,95 @@
   }
 
   // --- PlayCanvas Setup (Fully Corrected) ---
-  function initializeViewer() {
+  async function initializeViewer() {
+    const pc = await import('playcanvas');
+    // Expose the 'pc' object globally so that external scripts like orbit-camera.js can access it.
+    (window as any).pc = pc;
+    
     const canvas = document.getElementById('playcanvas-canvas') as HTMLCanvasElement;
     if (!canvas) return;
 
-        // This provides a non-nullable reference ('app') that TypeScript's
+    // This provides a non-nullable reference ('app') that TypeScript's
     // control flow analysis can definitively track within this function's scope.
     const app = new pc.Application(canvas, {
       mouse: new pc.Mouse(document.body),
+      touch: new pc.TouchDevice(document.body)
     });
 
     // Assign the guaranteed non-null instance to the outer-scope variable.
     pcApp = app;
-
     app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
     app.setCanvasResolution(pc.RESOLUTION_AUTO);
     window.addEventListener('resize', () => app.resizeCanvas());
-
-     const camera = new pc.Entity('camera');
-    camera.addComponent('camera', {
-      clearColor: new pc.Color(0.12, 0.12, 0.12),
-      farClip: 100,
-    });
-    camera.setPosition(0, 1, 5);
-    app.root.addChild(camera);
-
-    const ambientLight = new pc.Entity('ambientLight');
-    ambientLight.addComponent('light', { type: 'ambient', color: new pc.Color(0.3, 0.3, 0.3) });
-    app.root.addChild(ambientLight);
-
-    const staticLight = new pc.Entity('staticLight');
-    staticLight.addComponent('light', {
-      type: 'directional',
-      intensity: 1.2,
-      castShadows: true,
-      shadowResolution: 2048,
-      shadowBias: 0.2,
-      normalOffsetBias: 0.05,
-    });
-    staticLight.setEulerAngles(45, 30, 0);
-    app.root.addChild(staticLight);
-
-    const dynamicLight = new pc.Entity('MyDynamicLight');
-    dynamicLight.addComponent('light', {
-      type: 'point',
-      intensity: 1.5,
-      range: 30,
-      color: new pc.Color(1, 0.7, 0.4),
-    });
-    app.root.addChild(dynamicLight);
     
-    // Define all assets, including the orbit-camera script
     const assets = {
       model: new pc.Asset('model', 'container', { url: ASSET_PATHS.model }),
       aoMap: new pc.Asset('aoMap', 'texture', { url: ASSET_PATHS.aoMap }),
       orbitCamera: new pc.Asset('orbit-camera', 'script', { url: ASSET_PATHS.orbitCamera }),
     };
     
-    /* Object.values(assets).forEach(asset => app.assets.add(asset)); */
-    // Load the camera script FIRST, as it's a dependency for scene interaction.
+    Object.values(assets).forEach(asset => app.assets.add(asset));
+    
+    let modelEntity: pc.Entity | null = null; // Declare modelEntity in the outer scope
+
+    app.preload(() => {
+        // Configure scene
+        app.scene.clusteredLightingEnabled = true;
+        // app.scene.gammaCorrection = pc.GAMMA_SRGB;
+        // app.scene.toneMapping = pc.TONEMAP_ACES;
+
+        // Create camera
+        
+
+        const camera = new pc.Entity('camera');
+        camera.addComponent('camera', {
+            clearColor: new pc.Color(0.12, 0.12, 0.12),
+            farClip: 100,
+        });
+
+        camera.addComponent('script');
+        
+        // INTERACTIVITY
+        if (camera.script) {
+            camera.script.create('orbitCamera', { attributes: {
+                inertiaFactor: 0.05,
+                focusEntity: app.root, // Initially focus on the scene origin
+                distanceMax: 20,       // Set a max zoom out distance
+            } });
+        }
+        
+        // INTERACTIVITY FIX END
+
+        camera.setPosition(0, 1, 5);
+
+        
+
+        // Create lights
+        const ambientLight = new pc.Entity('ambientLight');
+        ambientLight.addComponent('light', { type: 'ambient', color: new pc.Color(0.3, 0.3, 0.3) });
+
+        const staticLight = new pc.Entity('staticLight');
+        staticLight.addComponent('light', {
+            type: 'directional',
+            intensity: 1.2,
+            castShadows: true,
+            shadowResolution: 2048,
+            shadowBias: 0.2,
+            normalOffsetBias: 0.05,
+        });
+        staticLight.setEulerAngles(45, 30, 0);
+
+        const dynamicLight = new pc.Entity('MyDynamicLight');
+        dynamicLight.addComponent('light', {
+            type: 'point',
+            intensity: 1.5,
+            range: 30,
+            color: new pc.Color(1, 0.7, 0.4),
+        });
+
+        
+
+          // Load the camera script FIRST, as it's a dependency for scene interaction.
     app.assets.add(assets.orbitCamera);
     app.assets.load(assets.orbitCamera);
     
@@ -150,8 +179,11 @@
     });
     
     app.assets.on(`load:${assets.model.id}`, () => {
+
+// Instantiate model
+
         const containerResource = assets.model.resource as pc.ContainerResource;
-        const modelEntity = containerResource.instantiateRenderEntity();
+        modelEntity = containerResource.instantiateRenderEntity(); // Assign to outer-scope variable
         app.root.addChild(modelEntity);
 
         if (modelEntity.render?.meshInstances[0] && assets.aoMap.resource) {
@@ -160,23 +192,33 @@
             material.update();
         }
         
-        camera.setPosition(0, 1, 5); // Set default position before focus
         
-        if (camera.script) {
-            const orbitCameraScript = camera.script.get('orbitCamera') as any;
-            if (orbitCameraScript) {
-                orbitCameraScript.focus(modelEntity);
-            }
-        }
 
-        // --- Finalize UI ---
+        
+    });
+        
+
+        // Add all remaining entities to the scene
+        app.root.addChild(camera);
+        app.root.addChild(ambientLight);
+        app.root.addChild(staticLight);
+        app.root.addChild(dynamicLight);
+
+        if (camera.script && modelEntity) { // Ensure modelEntity is not null
+          (camera.script as any).orbitCamera.focusEntity = modelEntity;
+        }
+       
+
+        // Update UI
         const loadingText = document.querySelector('.loading-text') as HTMLElement;
         if(loadingText) loadingText.style.display = 'none';
 
         const toggleButton = document.getElementById('light-engine-toggle') as HTMLElement;
         if(toggleButton) toggleButton.style.display = 'block';
+
+         // Start the engine
+        app.start();
     });
-    app.start();
   }
   // --- Main Execution ---
   document.addEventListener('DOMContentLoaded', () => {
