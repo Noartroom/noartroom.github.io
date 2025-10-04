@@ -20,6 +20,7 @@
     "@google/model-viewer": "^3.5.0",
     "astro": "^5.14.1",
     "astro-toolkit": "^0.2.10",
+    "playcanvas": "^2.11.8",
     "typescript": "^5.9.3"
   }
 }

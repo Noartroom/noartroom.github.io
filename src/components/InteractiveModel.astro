@@ -116,6 +116,8 @@ function attachModelListeners(modelViewer: ModelViewerElement, modelWrapper: HTM
     const errorMessage = modelWrapper.querySelector('.error-message') as HTMLElement;
     const posterButton = modelWrapper.querySelector('.poster-button') as HTMLElement;
 
+    progressBar?.classList.remove('hide');
+
     modelViewer.addEventListener('progress', (event) => {
         const progress = (event as unknown as CustomEvent).detail.totalProgress;
         const percent = Math.round(progress * 100);
@@ -123,12 +125,10 @@ function attachModelListeners(modelViewer: ModelViewerElement, modelWrapper: HTM
             progressBar.setAttribute('aria-valuenow', `${percent}`);
             updateBar.style.width = `${percent}%`;
         }
-        if (progress === 1) {
-           setTimeout(() => progressBar?.classList.add('hide'), 500);
-        }
     });
 
     modelViewer.addEventListener('load', () => {
+        progressBar?.classList.add('hide');
         modelViewer.classList.add('is-loaded');
         startOrbitAnimation(modelViewer);
     }, { once: true });
@@ -137,6 +137,7 @@ function attachModelListeners(modelViewer: ModelViewerElement, modelWrapper: HTM
         console.error('Model Viewer Error:', (event as unknown as CustomEvent).detail);
         errorMessage?.classList.remove('hide');
         posterButton?.classList.add('hide');
+        progressBar?.classList.add('hide');
     });
 }
 
@@ -166,7 +167,7 @@ async function updateModelThemes() {
     if (!oldViewer || !lightSrc || !darkSrc) return;
 
     if (!oldViewer.src) {
-        console.log('[Theme Change] 🧐 Model not loaded yet. Aborting theme swap for model.');
+        console.log('[Theme Change] Model not loaded yet. Aborting theme swap for model.');
         return;
     }
     
@@ -174,15 +175,14 @@ async function updateModelThemes() {
     const newSrc = isDark ? darkSrc : lightSrc;
     
     if (oldViewer.src && oldViewer.src.endsWith(newSrc)) {
-        console.log(`[Theme Change] 🧐 Model src is already correct. No change needed.`);
+        console.log(`[Theme Change] Model src is already correct. No change needed.`);
         return;
     }
 
-    console.log(`[Theme Change] 💥 Recreating model viewer to load: ${newSrc}`);
+    console.log(`[Theme Change] Recreating model viewer to load: ${newSrc}`);
 
     const newViewer = document.createElement('model-viewer');
 
-    // --- NEW FIX: Explicitly add the 'viewer' class ---
     newViewer.classList.add('viewer');
 
     for (const attr of oldViewer.attributes) {
@@ -199,7 +199,7 @@ async function updateModelThemes() {
 
     attachModelListeners(newViewer, modelWrapper);
 
-    console.log('[Theme Change] 🔎 Inspect the new viewer element about to be added:', newViewer);
+    console.log('[Theme Change] Inspect the new viewer element about to be added:', newViewer);
 
     if (oldViewer.parentNode) {
       oldViewer.parentNode.replaceChild(newViewer, oldViewer);
@@ -208,66 +208,6 @@ async function updateModelThemes() {
     newViewer.dismissPoster();
 }
 
-// async function updateModelThemes() {
-   /* const modelWrapper = document.querySelector('.model-wrapper') as HTMLElement;
-    if (!modelWrapper) return;
-
-    const modelViewer = modelWrapper.querySelector('.viewer') as ModelViewerElement;
-    const { lightSrc, darkSrc } = modelWrapper.dataset;
-    if (!modelViewer || !lightSrc || !darkSrc) return;
-
-    const isDark = document.documentElement.classList.contains('dark');
-    const newSrc = isDark ? darkSrc : lightSrc;
-
-    // Only swap if the src is actually different
-    if (modelViewer.src === newSrc) return;
-
-    // --- VIEW TRANSITION LOGIC ---
-    // Check if the browser supports View Transitions
-    if (!document.startViewTransition) {
-        modelViewer.src = newSrc; // Fallback for older browsers
-        return;
-    }
-
-    // Use a View Transition to create a smooth cross-fade
-    document.startViewTransition(() => {
-        modelViewer.src = newSrc;
-    });
-    await modelViewer.updateComplete; // Wait for the model to finish updating */
-/* 
-    const modelWrapper = document.querySelector('.model-wrapper') as HTMLElement;
-    if (!modelWrapper) return;
-
-    const modelViewer = modelWrapper.querySelector('.viewer') as ModelViewerElement;
-    const { lightSrc, darkSrc } = modelWrapper.dataset;
-    if (!modelViewer || !lightSrc || !darkSrc) return;
-
-     if (!modelViewer.src) {
-        console.log('[Theme Change] 🧐 Model not loaded yet. Aborting theme swap for model.');
-        return;
-    }
-
-    const isDark = document.documentElement.classList.contains('dark');
-    const newSrc = isDark ? darkSrc : lightSrc;
-
-    // This guard clause now prevents the error.
-    if (modelViewer.src && modelViewer.src.endsWith(newSrc)) {
-        console.log(`[Theme Change] 🧐 Model src is already correct. No change needed.`);
-        return;
-    }
-
-    // --- VIEW TRANSITION LOGIC TRIED AND REMOVED ---
-    if (!document.startViewTransition) {
-        console.log(`[Theme Change] 🎨 Swapping model src to: ${newSrc}`);
-        modelViewer.src = newSrc;
-        return;
-    }
-
-    document.startViewTransition(() => {
-        console.log(`[Theme Change] 🎨 Swapping model src with View Transition to: ${newSrc}`);
-        modelViewer.src = newSrc;
-    });
-} */
 
 // --- Main Execution ---
 function setup() {

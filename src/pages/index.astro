@@ -2,9 +2,8 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import InteractiveModel from '../components/InteractiveModel.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
-
+import PlayCanvasViewer from '../components/PlayCanvasViewer.astro';
 ---
 
 <!-- todo
@@ -18,14 +17,17 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 	</head>
 	<body>
 		<Header />
+		<PlayCanvasViewer />
 		<main>	
 			<section>
-				<InteractiveModel
+				<h2>About This Artwork</h2>
+				<!-- <InteractiveModel
 					lightSrc="models/modernart1-sculpt-1.glb"
 					darkSrc='models/versuchA.glb'
 					alt="3D model of an artwork by Noartroom"
-				/>
+				/> -->
 			</section>
+			
 		</main>
 		<Footer />
 	</body>
@@ -35,6 +37,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 		width: 720px; /* 960 ? */
 		max-width: calc(100% - 2em);
 		margin: auto;
+		padding-top: 2rem; /* space between header and main content */
 	}
 			/* Styles for blog content - currently unused */
 

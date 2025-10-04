@@ -1,0 +1,241 @@
+---
+/// PLAYCANVAS x WASM LIGHT ENGINE PROTOTYPE
+---
+<div class="viewer-wrapper">
+  <canvas id="playcanvas-canvas"></canvas>
+  <div class="controls">
+    <p class="loading-text">Loading 3D Scene...</p>
+    <button id="light-engine-toggle" class="engine-toggle-button" style="display: none;">Toggle Dynamic Lighting</button>
+  </div>
+</div>
+
+<script>
+  import * as pc from 'playcanvas';
+
+  // --- Asset Configuration ---
+  const ASSET_PATHS = {
+    model: '/models/your-model.glb',
+    aoMap: '/models/your-model-ao.jpg',
+    orbitCamera: '/js/orbit-camera.js', // The script is now an asset managed by PlayCanvas
+  };
+
+  // --- State Management ---
+  let lightEngineActive = false;
+  let wasmModule: (WebAssembly.Instance & { exports: any }) | null = null;
+  let animationFrameId: number | null = null;
+  let mouseX = window.innerWidth / 2;
+  let mouseY = window.innerHeight / 2;
+  let pcApp: pc.Application | null = null;
+
+  // --- WASM Helpers (with corrected, more robust loading) ---
+  function unpack_coords(packed_val: bigint) {
+    const x_bits = Number(packed_val >> 32n);
+    const y_bits = Number(packed_val & 0xFFFFFFFFn);
+    const buf = new ArrayBuffer(4);
+    const f32 = new Float32Array(buf);
+    const u32 = new Uint32Array(buf);
+    u32[0] = x_bits; const x = f32[0];
+    u32[0] = y_bits; const y = f32[0];
+    return { x, y };
+  }
+
+  async function loadWasm() {
+    if (wasmModule) return;
+    try {
+      // Use a more robust, two-step loading process for WASM
+      const response = await fetch('/wasm/rust_light_web_engine.wasm');
+      const buffer = await response.arrayBuffer();
+      const { instance } = await WebAssembly.instantiate(buffer);
+      wasmModule = instance;
+      wasmModule.exports.init();
+      console.log("WASM Light Engine is ready.");
+    } catch (err) { console.error("Failed to load WASM module:", err); }
+  }
+
+  // --- Main Animation & Sync Loop ---
+  function animate() {
+    if (!lightEngineActive || !wasmModule || !pcApp) return;
+
+    wasmModule.exports.update(mouseX, mouseY, window.innerWidth, window.innerHeight);
+
+    const screenPosPacked = wasmModule.exports.get_2d_pos();
+    const lightScreenPos = unpack_coords(screenPosPacked);
+    document.body.style.setProperty('--light-x', `${lightScreenPos.x}px`);
+    document.body.style.setProperty('--light-y', `${lightScreenPos.y}px`);
+
+    const pos3dPacked = wasmModule.exports.get_3d_pos();
+    const light3dPos = unpack_coords(pos3dPacked);
+    const dynamicLight = pcApp.root.findByName('MyDynamicLight');
+    if (dynamicLight) {
+        dynamicLight.setPosition(light3dPos.x ?? 0, 2.0, light3dPos.y ?? 0);
+    }
+
+    animationFrameId = requestAnimationFrame(animate);
+  }
+
+  // --- PlayCanvas Setup (Fully Corrected) ---
+  function initializeViewer() {
+    const canvas = document.getElementById('playcanvas-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+
+        // This provides a non-nullable reference ('app') that TypeScript's
+    // control flow analysis can definitively track within this function's scope.
+    const app = new pc.Application(canvas, {
+      mouse: new pc.Mouse(document.body),
+    });
+
+    // Assign the guaranteed non-null instance to the outer-scope variable.
+    pcApp = app;
+
+    app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+    app.setCanvasResolution(pc.RESOLUTION_AUTO);
+    window.addEventListener('resize', () => app.resizeCanvas());
+
+     const camera = new pc.Entity('camera');
+    camera.addComponent('camera', {
+      clearColor: new pc.Color(0.12, 0.12, 0.12),
+      farClip: 100,
+    });
+    camera.setPosition(0, 1, 5);
+    app.root.addChild(camera);
+
+    const ambientLight = new pc.Entity('ambientLight');
+    ambientLight.addComponent('light', { type: 'ambient', color: new pc.Color(0.3, 0.3, 0.3) });
+    app.root.addChild(ambientLight);
+
+    const staticLight = new pc.Entity('staticLight');
+    staticLight.addComponent('light', {
+      type: 'directional',
+      intensity: 1.2,
+      castShadows: true,
+      shadowResolution: 2048,
+      shadowBias: 0.2,
+      normalOffsetBias: 0.05,
+    });
+    staticLight.setEulerAngles(45, 30, 0);
+    app.root.addChild(staticLight);
+
+    const dynamicLight = new pc.Entity('MyDynamicLight');
+    dynamicLight.addComponent('light', {
+      type: 'point',
+      intensity: 1.5,
+      range: 30,
+      color: new pc.Color(1, 0.7, 0.4),
+    });
+    app.root.addChild(dynamicLight);
+    
+    // Define all assets, including the orbit-camera script
+    const assets = {
+      model: new pc.Asset('model', 'container', { url: ASSET_PATHS.model }),
+      aoMap: new pc.Asset('aoMap', 'texture', { url: ASSET_PATHS.aoMap }),
+      orbitCamera: new pc.Asset('orbit-camera', 'script', { url: ASSET_PATHS.orbitCamera }),
+    };
+    
+    /* Object.values(assets).forEach(asset => app.assets.add(asset)); */
+    // Load the camera script FIRST, as it's a dependency for scene interaction.
+    app.assets.add(assets.orbitCamera);
+    app.assets.load(assets.orbitCamera);
+    
+    // Once the camera script is loaded, attach it and then load remaining assets.
+    app.assets.on(`load:${assets.orbitCamera.id}`, () => {
+        camera.addComponent('script');
+        if (camera.script) {
+          camera.script.create('orbitCamera', { attributes: { inertiaFactor: 0.05 } });
+        }
+
+        app.assets.add(assets.model);
+        app.assets.add(assets.aoMap);
+        app.assets.load(assets.model);
+        app.assets.load(assets.aoMap);
+    });
+    
+    app.assets.on(`load:${assets.model.id}`, () => {
+        const containerResource = assets.model.resource as pc.ContainerResource;
+        const modelEntity = containerResource.instantiateRenderEntity();
+        app.root.addChild(modelEntity);
+
+        if (modelEntity.render?.meshInstances[0] && assets.aoMap.resource) {
+            const material = modelEntity.render.meshInstances[0].material as pc.StandardMaterial;
+            material.aoMap = assets.aoMap.resource as pc.Texture;
+            material.update();
+        }
+        
+        camera.setPosition(0, 1, 5); // Set default position before focus
+        
+        if (camera.script) {
+            const orbitCameraScript = camera.script.get('orbitCamera') as any;
+            if (orbitCameraScript) {
+                orbitCameraScript.focus(modelEntity);
+            }
+        }
+
+        // --- Finalize UI ---
+        const loadingText = document.querySelector('.loading-text') as HTMLElement;
+        if(loadingText) loadingText.style.display = 'none';
+
+        const toggleButton = document.getElementById('light-engine-toggle') as HTMLElement;
+        if(toggleButton) toggleButton.style.display = 'block';
+    });
+    app.start();
+  }
+  // --- Main Execution ---
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeViewer();
+
+    const toggleButton = document.getElementById('light-engine-toggle');
+    toggleButton?.addEventListener('click', () => {
+      lightEngineActive = !lightEngineActive;
+      document.body.classList.toggle('light-engine-active', lightEngineActive);
+      if (lightEngineActive) {
+        if (!wasmModule) { loadWasm().then(animate); } else { animate(); }
+      } else {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    });
+
+    window.addEventListener('mousemove', (event) => { 
+      mouseX = event.clientX; 
+      mouseY = event.clientY; 
+    });
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(loadWasm);
+    } else {
+      setTimeout(loadWasm, 2000);
+    }
+  });
+</script>
+
+<style>
+  .viewer-wrapper {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    background-color: #1f1f1f;
+  }
+  #playcanvas-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .controls {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    color: white;
+  }
+  .engine-toggle-button {
+    cursor: pointer;
+    padding: 8px 16px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+  .engine-toggle-button:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+</style>

@@ -152,3 +152,48 @@ html.dark {
 	/* added line to stop words getting smushed together (as they go onto separate lines and some screen readers do not understand line feeds as a space */
 	white-space: nowrap;
 }
+
+/* --- Dynamic Lighting Engine Styles --- */
+
+/* body.light-engine-active::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(
+    circle at var(--light-x) var(--light-y),
+    rgba(255, 230, 200, 0.25) 0%,
+    rgba(0, 0, 0, 0) 35%
+  );
+}
+ */
+
+body.light-engine-active::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 999; /* High z-index to be an overlay */
+  
+  /* The radial gradient creates the soft glow effect, driven by JS */
+  background: radial-gradient(
+    circle at var(--light-x) var(--light-y),
+    rgba(255, 230, 200, 0.25) 0%,
+    rgba(0, 0, 0, 0) 35%
+  );
+}
+
+body.light-engine-active h1,
+body.light-engine-active h2 {
+  transition: text-shadow 0.1s linear;
+
+  /* The text shadow offsets are calculated based on the light's position */
+  text-shadow: 
+    calc((50vw - var(--light-x)) / 40)
+    calc((50vh - var(--light-y)) / 40)
+    6px
+    rgba(0, 0, 0, 0.4);
+}
