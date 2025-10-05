@@ -23,5 +23,8 @@
     "astro-toolkit": "^0.2.10",
     "playcanvas": "^2.11.8",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/playcanvas": "^0.221.7"
   }
 }

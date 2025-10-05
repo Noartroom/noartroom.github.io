@@ -10,7 +10,7 @@
 </div>
 
 <script>
-  import * as pc from 'playcanvas';
+  import * as pc from 'playcanvas/build/playcanvas.mjs';
 
   (window as any).pc = pc;
 
@@ -98,12 +98,7 @@
     app.setCanvasResolution(pc.RESOLUTION_AUTO);
     window.addEventListener('resize', () => app.resizeCanvas());
     
-    /* const assets = {
-      model: new pc.Asset('model', 'container', { url: ASSET_PATHS.model }),
-      aoMap: new pc.Asset('aoMap', 'texture', { url: ASSET_PATHS.aoMap }),
-      orbitCamera: new pc.Asset('orbit-camera', 'script', { url: ASSET_PATHS.orbitCamera }),
-      interactionRaycast: new pc.Asset('interaction-raycast', 'script', { url: ASSET_PATHS.interactionRaycast }),
-    }; */
+    // Load assets
     const assets = [
         new pc.Asset('model', 'container', { url: ASSET_PATHS.model }),
         new pc.Asset('aoMap', 'texture', { url: ASSET_PATHS.aoMap }),
@@ -127,16 +122,13 @@
     let modelEntity: pc.Entity | null = null; // Declare modelEntity in the outer scope
  */
 
-
-
-
-
-
+    // Configure scene
     const buildScene = () => {
-        // Configure scene
-        app.scene.clusteredLightingEnabled = true;
+        // For more complex lighting setup, (needs some more setup config
+        // app.scene.clusteredLightingEnabled = true;
         // app.scene.gammaCorrection = pc.GAMMA_SRGB;
         // app.scene.toneMapping = pc.TONEMAP_ACES;
+
         const modelAsset = app.assets.find('model');
         const aoMapAsset = app.assets.find('aoMap');
 
@@ -147,48 +139,31 @@
         }
         /* const containerResource = modelAsset.resource as pc.ContainerResource;
         const modelEntity = containerResource.instantiateRenderEntity(); */ // Assign to outer-scope variable
-        const modelEntity = (modelAsset.resource as pc.ContainerResource).instantiateRenderEntity();
-        app.root.addChild(modelEntity);
+        const modelEntity = (modelAsset.resource as unknown as pc.ContainerResource).instantiateRenderEntity();
+        app.root.addChild(modelEntity as unknown as pc.GraphNode);
 
         // Add physics components for raycasting
-        modelEntity.addComponent('rigidbody', { type: 'static' });
-        modelEntity.addComponent('collision', { type: 'mesh' });
-
-      /*   if (modelEntity.render?.meshInstances[0]) {
-            const material = modelEntity.render.meshInstances[0].material as pc.StandardMaterial;
-            if (material) {
-                material.diffuse = new pc.Color(1, 1, 1); // Set base color to white. TODO: double-check color
-                material.update();
-            }
-        } */
-            // WORKS!!!!!!!!!!!!!
+        // modelEntity.addComponent('rigidbody', { type: 'static' }); // check if helps TODO
+        // modelEntity.addComponent('collision', { type: 'mesh' }); // for different models, adjust TODO
         
-            // Search the entire model hierarchy to find the render component
+        // Search the entire model hierarchy to find the render component
         const renderComponent = modelEntity.findComponent('render') as pc.RenderComponent;
 
         // Now, check if we found a render component and it has a material
         if (renderComponent && renderComponent.meshInstances[0]) {
-            const material = renderComponent.meshInstances[0].material as pc.StandardMaterial;
+            const material = renderComponent.meshInstances[0].material as unknown as pc.StandardMaterial;
             if (material) {
-                // 1. Force the material's base color to be white to ensure it reflects light
-                material.diffuse = new pc.Color(1, 1, 1);
+                // material.diffuse = new pc.Color(1, 1, 1);  // Set base color to white. TODO: double-check color
                 
-                // 2. Apply your separate AO map
+                // Apply separate AO map
                 if (aoMapAsset?.resource) {
                     material.aoMap = aoMapAsset.resource as pc.Texture;
                 }
                 
-                // 3. Push the changes to the GPU
+                // Push the changes to the GPU
                 material.update();
             }
         }
-
-        // Apply AO Map
-       /*  if (modelEntity.render?.meshInstances[0] && aoMapAsset?.resource) { 
-            const material = modelEntity.render.meshInstances[0].material as pc.StandardMaterial;
-            material.aoMap = aoMapAsset.resource as pc.Texture;
-            material.update();
-        } */
 
         const camera = new pc.Entity('camera');
         camera.addComponent('camera', {
@@ -204,7 +179,7 @@
                 inertiaFactor: 0.1,
                 focusEntity: modelEntity, // Initially focus on the scene origin . try app.root
                 distance: 8,      // Start 8 units away from the model
-                maxDistance: 25,       // Set a max zoom out distance
+                maxDistance: 18,       // Set a max zoom out distance
                 pitch: -20,       // Look slightly down at it
                 yaw: 10,        // Look slightly to the right   
             } });
@@ -212,12 +187,6 @@
             camera.script.create('orbitCameraInputMouse');
             camera.script.create('orbitCameraInputTouch');
         }
-
-        
-        
-        // INTERACTIVITY FIX END
-
-        // camera.setPosition(0, 1, 5);
 
         if (camera.script) {
             camera.script.create('interactionRaycast', {
@@ -244,6 +213,7 @@
         staticLight.setEulerAngles(45, 30, 0);
         app.root.addChild(staticLight);
 
+        // TODO: Check: seems to have no effect
         const dynamicLight = new pc.Entity('MyDynamicLight');
         dynamicLight.addComponent('light', {
             type: 'point',
@@ -255,7 +225,7 @@
 
         
 
-          // Load the camera script FIRST, as it's a dependency for scene interaction.
+    // Load the camera script FIRST, as it's a dependency for scene interaction.
     /* app.assets.add(assets.orbitCamera);
     app.assets.load(assets.orbitCamera); */
     
@@ -275,16 +245,7 @@
     // app.assets.on(`load:${assets.model.id}`, () => {
 
 // Instantiate model
-
-        
-
-        
-        
-
-        
    //  });
-        
-
         // Add all remaining entities to the scene
        /*  app.root.addChild(camera);
         app.root.addChild(ambientLight);
