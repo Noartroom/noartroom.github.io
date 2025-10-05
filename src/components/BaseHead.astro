@@ -61,6 +61,9 @@ const { title, description } = Astro.props;
 	<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap-index.xml" />
 
 	<ClientRouter /> <!-- todo: add fallback="none" ? -->
+	<script is:inline src="/lib/ammo.js"></script>
+
+
 <!-- This is intentionally inlined to avoid FOUC todo: test whether flash appears on browsers with preference dark -->
 <!-- <script is:inline>
 	const root = document.documentElement

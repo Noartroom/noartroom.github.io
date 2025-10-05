@@ -18,6 +18,7 @@
     "@astrojs/check": "^0.9.4",
     "@astrojs/sitemap": "^3.6.0",
     "@google/model-viewer": "^3.5.0",
+    "ammo.js": "^0.0.10",
     "astro": "^5.14.1",
     "astro-toolkit": "^0.2.10",
     "playcanvas": "^2.11.8",
