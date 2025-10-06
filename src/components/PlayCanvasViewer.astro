@@ -278,9 +278,9 @@
         const dynamicLight = new pc.Entity('MyDynamicLight');
         dynamicLight.addComponent('light', {
             type: 'point',
-            intensity: 1.5,
+            intensity: 0.2,
             range: 30,
-            color: new pc.Color(1, 0.7, 0.4),
+            color: new pc.Color(1, 1, 1.1),
         });
         app.root.addChild(dynamicLight);
 
