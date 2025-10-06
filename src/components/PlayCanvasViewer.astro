@@ -10,13 +10,15 @@
 </div>
 
 <script>
-  import * as pc from 'playcanvas/build/playcanvas.mjs';
-
+/*   import * as pc from 'playcanvas/build/playcanvas.min.mjs';
+ */
+  declare const pc: any;
   (window as any).pc = pc;
 
   // --- Asset Configuration ---
   const ASSET_PATHS = {
     model: '/models/your-model.glb',
+    darkModel: '/models/your-model-dark.glb', // dark version of the model
     aoMap: '/models/your-model-ao.jpg',
     orbitCamera: '/js/orbit-camera.js', // The script is now an asset managed by PlayCanvas
     interactionRaycast: '/js/interaction-raycast.js'
@@ -81,6 +83,15 @@
     /* const pc = await import('playcanvas'); */
     // Expose the 'pc' object globally so that external scripts like orbit-camera.js can access it.
     /* (window as any).pc = pc; */
+
+      await new Promise<void>(resolve => {
+      const interval = setInterval(() => {
+        if ((window as any).Ammo) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 50);
+    });
     
     const canvas = document.getElementById('playcanvas-canvas') as HTMLCanvasElement;
     if (!canvas) return;
@@ -101,22 +112,29 @@
     // Load assets
     const assets = [
         new pc.Asset('model', 'container', { url: ASSET_PATHS.model }),
+        new pc.Asset('darkModel', 'container', { url: ASSET_PATHS.darkModel }),
         new pc.Asset('aoMap', 'texture', { url: ASSET_PATHS.aoMap }),
         new pc.Asset('orbitCamera', 'script', { url: ASSET_PATHS.orbitCamera }),
         new pc.Asset('interactionRaycast', 'script', { url: ASSET_PATHS.interactionRaycast }), // ADDED
     ];
     
     let loadedCount = 0;
-    Object.values(assets).forEach(asset => {
+    assets.forEach(asset => {
+      console.log(`Queuing asset for loading: ${asset.name} (${asset.file.url})`);
       app.assets.add(asset);
       app.assets.load(asset);
             asset.on('load', () => {
+                console.log(`✅ Successfully loaded: ${asset.name}`);
                 loadedCount++;
                 // Once all assets are loaded, build the scene
                 if (loadedCount === assets.length) {
                     buildScene();
                 }
             });
+
+            asset.on('error', (err: Error) => {
+              console.error(`❌ FAILED to load asset: ${asset.name} - URL: ${asset.file.url} - Error: ${err}`);
+          });
         });
     /*
     let modelEntity: pc.Entity | null = null; // Declare modelEntity in the outer scope
@@ -129,46 +147,88 @@
         // app.scene.gammaCorrection = pc.GAMMA_SRGB;
         // app.scene.toneMapping = pc.TONEMAP_ACES;
 
+        // SINGLE MODEL
+        // const modelAsset = app.assets.find('model');
+
+        // TWO MODELS (light and dark versions)
         const modelAsset = app.assets.find('model');
+        const darkModelAsset = app.assets.find('darkModel');
         const aoMapAsset = app.assets.find('aoMap');
 
-        //  Instantiate the Model
-        if (!modelAsset || !modelAsset.resource) {
-            console.error("Model asset is not loaded or is null.");
-            return;
-        }
+        // --- Instantiate Both Models ---
+        const modelEntity = modelAsset.resource.instantiateRenderEntity();
+        modelEntity.name = 'model';
+        // app.root.addChild(modelEntity);
+
+        const darkModelEntity = (darkModelAsset.resource).instantiateRenderEntity();
+        darkModelEntity.name = 'darkModel';
+        // app.root.addChild(darkModelEntity);
+
+        // --- Instantiate single Model (commented out) ---
         /* const containerResource = modelAsset.resource as pc.ContainerResource;
         const modelEntity = containerResource.instantiateRenderEntity(); */ // Assign to outer-scope variable
-        const modelEntity = (modelAsset.resource as unknown as pc.ContainerResource).instantiateRenderEntity();
-        app.root.addChild(modelEntity as unknown as pc.GraphNode);
-
-        // Add physics components for raycasting
-        // modelEntity.addComponent('rigidbody', { type: 'static' }); // check if helps TODO
-        // modelEntity.addComponent('collision', { type: 'mesh' }); // for different models, adjust TODO
         
-        // Search the entire model hierarchy to find the render component
-        const renderComponent = modelEntity.findComponent('render') as pc.RenderComponent;
+        // const modelEntity = (modelAsset.resource as unknown as pc.ContainerResource).instantiateRenderEntity();
+        // app.root.addChild(modelEntity as unknown as pc.GraphNode);
 
-        // Now, check if we found a render component and it has a material
-        if (renderComponent && renderComponent.meshInstances[0]) {
-            const material = renderComponent.meshInstances[0].material as unknown as pc.StandardMaterial;
-            if (material) {
-                // material.diffuse = new pc.Color(1, 1, 1);  // Set base color to white. TODO: double-check color
-                
-                // Apply separate AO map
-                if (aoMapAsset?.resource) {
-                    material.aoMap = aoMapAsset.resource as pc.Texture;
-                }
-                
-                // Push the changes to the GPU
-                material.update();
-            }
-        }
+        // Add physics components for raycasting (commented out)
+        [modelEntity, darkModelEntity].forEach(model => {
+          const embeddedLights = model.findComponents('light');
+          if (embeddedLights.length > 0) {
+              console.warn(`Found and destroyed ${embeddedLights.length} light(s) embedded in model: ${model.name}`);
+              embeddedLights.forEach((light: pc.LightComponent) => {
+                  (light as any).entity.destroy();
+              });
+          }
+          
+          app.root.addChild(model);
+          
+          // modelEntity.addComponent('rigidbody', { type: 'static' }); // check if helps TODO
+          // modelEntity.addComponent('collision', { type: 'mesh' }); // for different models, adjust TODO
+          model.addComponent('rigidbody', { type: 'static' }); // check if helps TODO
+          model.addComponent('collision', { type: 'mesh' }); // for different models, adjust TODO
+        
+          // Search the entire model hierarchy to find the render component
+          const renderComponent = model.findComponent('render');
 
+          // Now, check if we found a render component and it has a material
+          if (renderComponent && renderComponent.meshInstances[0]) {
+            const material = renderComponent.meshInstances[0].material;
+            //material.diffuse = new pc.Color(1, 1, 1);  // Set base color to white. TODO: double-check color
+            material.diffuse = new pc.Color(0, 0, 0);
+
+                  // Set a unique glow color for each model
+                  // (Commented out because no effect was visible)
+                  /* if (model.name === 'model') {
+                      material.emissive = new pc.Color(1, 1, 1); // White
+                  } else {
+                      material.emissive = new pc.Color(1, 0, 1); // Magenta
+                  } */
+
+                  // Apply separate AO map
+                  if (aoMapAsset?.resource) {
+                      material.aoMap = aoMapAsset.resource as pc.Texture;
+                  }
+                  
+                  // Push the changes to the GPU
+                  material.update();
+              
+          }
+        });
+
+        // --- Set Initial Visibility ---
+        const isInitiallyDark = document.documentElement.classList.contains('dark');
+        modelEntity.enabled = !isInitiallyDark;
+        darkModelEntity.enabled = isInitiallyDark;
+
+        // The entity that the camera will focus on
+        const focusEntity = isInitiallyDark ? darkModelEntity : modelEntity;
+
+        // Create camera
         const camera = new pc.Entity('camera');
         camera.addComponent('camera', {
-            clearColor: new pc.Color(0.12, 0.12, 0.12),
-            farClip: 100,
+            clearColor: new pc.Color(0.12, 0.12, 0.12)
+           /*  farClip: 100, */
         });
 
         camera.addComponent('script');
@@ -177,7 +237,7 @@
         if (camera.script) {
             camera.script.create('orbitCamera', { attributes: {
                 inertiaFactor: 0.1,
-                focusEntity: modelEntity, // Initially focus on the scene origin . try app.root
+                focusEntity: focusEntity, // Initially focus on the scene origin . try app.root
                 distance: 8,      // Start 8 units away from the model
                 maxDistance: 18,       // Set a max zoom out distance
                 pitch: -20,       // Look slightly down at it
@@ -194,12 +254,12 @@
             });
         }
 
-        app.root.addChild(camera);
+        app.root.addChild(camera as pc.GraphNode);
 
         // Create lights
         const ambientLight = new pc.Entity('ambientLight');
-        ambientLight.addComponent('light', { type: 'ambient', color: new pc.Color(0.3, 0.3, 0.3) });
-        app.root.addChild(ambientLight);
+        ambientLight.addComponent('light', { type: 'ambient', color: new pc.Color(0.3, 0.3, 0.3) }); // TODO : play with this color
+        // app.root.addChild(ambientLight);
 
         const staticLight = new pc.Entity('staticLight');
         staticLight.addComponent('light', {
@@ -211,7 +271,7 @@
             normalOffsetBias: 0.05,
         });
         staticLight.setEulerAngles(45, 30, 0);
-        app.root.addChild(staticLight);
+        // app.root.addChild(staticLight);
 
         // TODO: Check: seems to have no effect
         const dynamicLight = new pc.Entity('MyDynamicLight');
@@ -221,7 +281,7 @@
             range: 30,
             color: new pc.Color(1, 0.7, 0.4),
         });
-        app.root.addChild(dynamicLight);
+        // app.root.addChild(dynamicLight);
 
         
 
@@ -264,6 +324,13 @@
         const toggleButton = document.getElementById('light-engine-toggle') as HTMLElement;
         if(toggleButton) toggleButton.style.display = 'block';
 
+        // Add the lights AFTER the first frame has started.
+        // This avoids the initialization race condition.
+        setTimeout(() => {
+            app.root.addChild(ambientLight);
+            app.root.addChild(staticLight);
+            app.root.addChild(dynamicLight); // The dynamic light is optional
+        }, 100); // 100ms delay is more than enough
          // Start the engine
         app.start();
     };
@@ -271,6 +338,14 @@
   // --- Main Execution ---
   document.addEventListener('DOMContentLoaded', () => {
     initializeViewer();
+
+    const themeToggleButton = document.getElementById('themeToggle'); // Assumes your button has id="themeToggle"
+    if (themeToggleButton) {
+      themeToggleButton.addEventListener('click', () => {
+        // Use a small delay to ensure the <html> class has been updated before we check it
+        setTimeout(handleThemeChange, 50);
+      });
+    }
 
     const toggleButton = document.getElementById('light-engine-toggle');
     toggleButton?.addEventListener('click', () => {
@@ -295,6 +370,25 @@
       setTimeout(loadWasm, 2000);
     }
   });
+
+  function handleThemeChange() {
+    if (!pcApp) return;
+
+    const isDark = document.documentElement.classList.contains('dark');
+
+    const model = pcApp.root.findByName('model');
+    const darkModel = pcApp.root.findByName('darkModel');
+    const cameraEntity = pcApp.root.findByName('camera');
+
+    if (model && darkModel && cameraEntity) {
+      model.enabled = !isDark;
+      darkModel.enabled = isDark;
+
+      // Update the camera's focus to the newly visible model
+      const focusEntity = isDark ? darkModel : model;
+      (cameraEntity.script as any).orbitCamera.focusEntity = focusEntity;
+    }
+  }
 </script>
 
 <style>
