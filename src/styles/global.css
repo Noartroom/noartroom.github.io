@@ -181,8 +181,8 @@ body.light-engine-active::before {
   /* The radial gradient creates the soft glow effect, driven by JS */
   background: radial-gradient(
     circle at var(--light-x) var(--light-y),
-    rgba(255, 230, 200, 0.25) 0%,
-    rgba(0, 0, 0, 0) 35%
+    rgba(255, 255, 255, 0.25) 0%,
+    rgba(0, 0, 0, 0) 35% /* made transparent (TODO: check) */
   );
 }
 

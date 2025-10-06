@@ -17,7 +17,7 @@
 
   // --- Asset Configuration ---
   const ASSET_PATHS = {
-    model: '/models/your-model.glb',
+    model: '/models/dezimiertt-glb-03.glb',
     darkModel: '/models/your-model-dark.glb', // dark version of the model
     aoMap: '/models/your-model-ao.jpg',
     orbitCamera: '/js/orbit-camera.js', // The script is now an asset managed by PlayCanvas
@@ -65,11 +65,13 @@
 
     const screenPosPacked = wasmModule.exports.get_2d_pos();
     const lightScreenPos = unpack_coords(screenPosPacked);
+    // Manu: Update CSS variables for the light effect
     document.body.style.setProperty('--light-x', `${lightScreenPos.x}px`);
     document.body.style.setProperty('--light-y', `${lightScreenPos.y}px`);
 
     const pos3dPacked = wasmModule.exports.get_3d_pos();
     const light3dPos = unpack_coords(pos3dPacked);
+    // Manu: Update the PlayCanvas light position vom dynamic light
     const dynamicLight = pcApp.root.findByName('MyDynamicLight');
     if (dynamicLight) {
         dynamicLight.setPosition(light3dPos.x ?? 0, 2.0, light3dPos.y ?? 0);
@@ -109,7 +111,7 @@
     app.setCanvasResolution(pc.RESOLUTION_AUTO);
     window.addEventListener('resize', () => app.resizeCanvas());
     
-    // Load assets
+    // Load assets (Manu)
     const assets = [
         new pc.Asset('model', 'container', { url: ASSET_PATHS.model }),
         new pc.Asset('darkModel', 'container', { url: ASSET_PATHS.darkModel }),
@@ -140,7 +142,7 @@
     let modelEntity: pc.Entity | null = null; // Declare modelEntity in the outer scope
  */
 
-    // Configure scene
+    // Configure scene Manu: HIer ist das meiste drin
     const buildScene = () => {
         // For more complex lighting setup, (needs some more setup config
         // app.scene.clusteredLightingEnabled = true;
@@ -195,7 +197,7 @@
           if (renderComponent && renderComponent.meshInstances[0]) {
             const material = renderComponent.meshInstances[0].material;
             //material.diffuse = new pc.Color(1, 1, 1);  // Set base color to white. TODO: double-check color
-            material.diffuse = new pc.Color(0, 0, 0);
+            material.diffuse = new pc.Color(1, 1, 1);
 
                   // Set a unique glow color for each model
                   // (Commented out because no effect was visible)
@@ -233,20 +235,19 @@
 
         camera.addComponent('script');
         
-        // INTERACTIVITY
-        if (camera.script) {
-            camera.script.create('orbitCamera', { attributes: {
-                inertiaFactor: 0.1,
-                focusEntity: focusEntity, // Initially focus on the scene origin . try app.root
-                distance: 8,      // Start 8 units away from the model
-                maxDistance: 18,       // Set a max zoom out distance
-                pitch: -20,       // Look slightly down at it
-                yaw: 10,        // Look slightly to the right   
-            } });
 
-            camera.script.create('orbitCameraInputMouse');
-            camera.script.create('orbitCameraInputTouch');
-        }
+        camera.script.create('orbitCamera', { attributes: {
+            inertiaFactor: 0.1,
+            focusEntity: focusEntity, // Initially focus on the scene origin . try app.root
+            distance: 8,      // Start 8 units away from the model
+            // maxDistance: 15,       // Set a max zoom out distance
+            pitch: -20,       // Look slightly down at it
+           //  yaw: 10,        // Look slightly to the right   
+        } });
+
+        camera.script.create('orbitCameraInputMouse');
+        camera.script.create('orbitCameraInputTouch');
+    
 
         if (camera.script) {
             camera.script.create('interactionRaycast', {
@@ -254,24 +255,24 @@
             });
         }
 
-        app.root.addChild(camera as pc.GraphNode);
+        app.root.addChild(camera);
 
-        // Create lights
+        // Create lights Manu: die lights
         const ambientLight = new pc.Entity('ambientLight');
-        ambientLight.addComponent('light', { type: 'ambient', color: new pc.Color(0.3, 0.3, 0.3) }); // TODO : play with this color
-        // app.root.addChild(ambientLight);
+        ambientLight.addComponent('light', { type: 'ambient', color: new pc.Color(0.4, 0.4, 0.4) }); // TODO : play with this color
+        app.root.addChild(ambientLight);
 
         const staticLight = new pc.Entity('staticLight');
         staticLight.addComponent('light', {
             type: 'directional',
-            intensity: 1.2,
+            intensity: 1.5,
             castShadows: true,
-            shadowResolution: 2048,
-            shadowBias: 0.2,
-            normalOffsetBias: 0.05,
+            shadowResolution: 1024,
+           /*  shadowBias: 0.2,
+            normalOffsetBias: 0.05, */
         });
         staticLight.setEulerAngles(45, 30, 0);
-        // app.root.addChild(staticLight);
+        app.root.addChild(staticLight);
 
         // TODO: Check: seems to have no effect
         const dynamicLight = new pc.Entity('MyDynamicLight');
@@ -281,7 +282,7 @@
             range: 30,
             color: new pc.Color(1, 0.7, 0.4),
         });
-        // app.root.addChild(dynamicLight);
+        app.root.addChild(dynamicLight);
 
         
 
@@ -326,11 +327,11 @@
 
         // Add the lights AFTER the first frame has started.
         // This avoids the initialization race condition.
-        setTimeout(() => {
+       /*  setTimeout(() => {
             app.root.addChild(ambientLight);
             app.root.addChild(staticLight);
             app.root.addChild(dynamicLight); // The dynamic light is optional
-        }, 100); // 100ms delay is more than enough
+        }, 100); */ // 100ms delay is more than enough
          // Start the engine
         app.start();
     };
